@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RunBoard</title>
+    <style>
+        /* ================= 現代柔和暗色系 ================= */
+        :root {
+            --bg-color: #191919;
+            --sidebar-bg: #202020;
+            --content-bg: #191919;
+            --text-primary: #D4D4D4;
+            --text-secondary: #9E9E9E;
+            --border-color: #333333;
+            --hover-bg: #2C2C2C;
+            --accent-color: #3b82f6;
+            --danger-color: #ef4444;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 側邊欄 */
+        .sidebar {
+            width: 250px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 10px;
+        }
+
+        .sidebar-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            padding: 0 15px 15px 15px;
+            letter-spacing: 1px;
+        }
+
+        .menu-item {
+            padding: 10px 15px;
+            margin-bottom: 5px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            color: var(--text-primary);
+            transition: background 0.2s ease;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-item:hover { background-color: var(--hover-bg); }
+        .menu-item.active { background-color: var(--hover-bg); font-weight: 600; color: white; }
+
+        .file-status-area {
+            margin-top: auto;
+            padding: 15px 10px 0 10px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .btn {
+            background-color: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            display: block;
+            width: 100%;
+            text-align: center;
+            margin-top: 8px;
+        }
+        .btn:hover { background-color: var(--hover-bg); color: white; }
+        .btn.primary { background-color: var(--accent-color); color: white; border-color: var(--accent-color); }
+        .btn.primary:hover { background-color: #2563eb; }
+        
+        .btn-small { padding: 4px 8px; font-size: 12px; display: inline-block; width: auto; margin:0;}
+
+        /* 主畫面區 */
+        .main-content {
+            flex: 1;
+            padding: 40px 60px;
+            overflow-y: auto;
+            background-color: var(--content-bg);
+            position: relative;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+
+        .section-title { font-size: 28px; font-weight: 600; color: white; }
+
+        /* 分類與卡片 */
+        .category { margin-bottom: 30px; padding: 10px; margin-left: -10px; margin-right: -10px; border-radius: var(--radius-md); border: 2px dashed transparent; transition: all 0.2s; }
+        .category.drag-over { border-color: var(--accent-color); background-color: rgba(59, 130, 246, 0.05); }
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .category-title-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+            padding: 4px 8px;
+            margin-left: -8px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .category-title-area:hover { background-color: var(--hover-bg); }
+        .toggle-icon { font-size: 12px; transition: transform 0.2s; color: var(--text-secondary); }
+        .toggle-icon.collapsed { transform: rotate(-90deg); }
+        .category-name { font-size: 18px; color: var(--text-secondary); font-weight: 500; }
+        
+        .list-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+        .list-container.collapsed, .task-list.collapsed { display: none; }
+
+        .item-card {
+            background-color: var(--sidebar-bg);
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: var(--radius-md);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .item-card:hover { border-color: #4a4a4a; transform: translateY(-2px); }
+        .item-card, .task-item { cursor: grab; }
+        .item-card.dragging, .task-item.dragging, .category.dragging { opacity: 0.5; transform: scale(0.98); }
+        .item-card:active, .task-item:active { cursor: grabbing; }
+        .item-title { color: white; font-weight: 500; font-size: 16px; margin-right: 20px;}
+        .item-desc { color: var(--text-secondary); font-size: 13px; }
+        
+        /* 刪除與編輯按鈕 */
+        .delete-btn, .edit-btn {
+            position: absolute;
+            top: 10px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .delete-btn { right: 10px; }
+        .edit-btn { right: 35px; }
+        .item-card:hover .delete-btn, .pwd-card:hover .delete-btn, .item-card:hover .edit-btn, .pwd-card:hover .edit-btn { opacity: 1; }
+        .delete-btn:hover { color: var(--danger-color); }
+        .edit-btn:hover { color: var(--accent-color); }
+
+        /* 便條紙區 */
+        .note-card {
+            border: 1px solid rgba(0,0,0,0.1);
+            line-height: 1.6;
+            min-height: 200px;
+            overflow: auto;
+            resize: both;
+            box-shadow: 2px 4px 10px rgba(0,0,0,0.15);
+            justify-content: flex-start;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .note-card:hover { 
+            border-color: rgba(0,0,0,0.3); 
+            box-shadow: 2px 6px 14px rgba(0,0,0,0.25); 
+            transform: translateY(-2px);
+        }
+        .note-card .item-title { 
+            color: rgba(0, 0, 0, 0.85); 
+            font-weight: 400; 
+            font-size: 15px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin-top: 5px;
+            width: 100%;
+        }
+        .note-card .delete-btn, .note-card .edit-btn { color: rgba(0,0,0,0.4); }
+        .note-card .delete-btn:hover { color: #dc2626; }
+        .note-card .edit-btn:hover { color: #2563eb; }
+        
+        .note-card::-webkit-scrollbar { width: 6px; height: 6px; }
+        .note-card::-webkit-scrollbar-corner { background: transparent; }
+        .note-card::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.2); border-radius: 4px; }
+
+        /* 任務清單區 */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .task-item {
+            background-color: var(--sidebar-bg);
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .task-checkbox {
+            display: none; /* Removed */
+        }
+        /* 任務狀態標籤 */
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .status-not_started { background-color: #374151; color: #D1D5DB; }
+        .status-in_progress { background-color: #1e3a8a; color: #93C5FD; }
+        .status-done { background-color: #064e3b; color: #6EE7B7; text-decoration: line-through; }
+
+        .task-text {
+            flex: 1;
+            font-size: 16px;
+            color: white;
+            transition: color 0.2s;
+        }
+        .task-text.status-done {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+        }
+        .task-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* 密碼區 */
+        .pwd-container { display: flex; flex-direction: column; gap: 15px; }
+        .pwd-card {
+            background-color: var(--sidebar-bg);
+            border: 1px solid var(--border-color);
+            padding: 15px 20px;
+            border-radius: var(--radius-md);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+        .pwd-info { display: flex; flex-direction: column; gap: 4px; }
+        .pwd-platform { color: white; font-weight: 500; font-size: 16px; }
+        .pwd-account { color: var(--text-secondary); font-size: 14px; }
+        .pwd-actions { display: flex; align-items: center; gap: 15px; padding-right: 25px;}
+
+        .pwd-mask {
+            background-color: #111; padding: 6px 12px; border-radius: 4px;
+            font-family: monospace; font-size: 16px; cursor: pointer;
+            letter-spacing: 2px; min-width: 120px; text-align: center; border: 1px solid var(--border-color);
+        }
+        .pwd-mask:hover { border-color: #555; }
+
+        /* 彈出視窗 (Modal) */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6); display: none;
+            justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: var(--sidebar-bg); width: 400px; padding: 25px;
+            border-radius: var(--radius-lg); border: 1px solid var(--border-color);
+        }
+        .modal-title { font-size: 18px; color: white; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; color: var(--text-secondary); font-size: 13px; margin-bottom: 5px; }
+        .form-group input {
+            width: 100%; background: var(--bg-color); border: 1px solid var(--border-color);
+            color: white; padding: 10px; border-radius: 6px; outline: none;
+        }
+        .form-group input:focus { border-color: var(--accent-color); }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
+
+    </style>
+</head>
+<body>
+
+    <!-- 側邊欄 -->
+    <div class="sidebar">
+        <div class="sidebar-title">我的工作區</div>
+        <div id="menu-favorites" class="menu-item active" onclick="switchTab('favorites')">🔖 常用網站</div>
+        <div id="menu-notes" class="menu-item" onclick="switchTab('notes')">📝 便條紙</div>
+        <div id="menu-tasks" class="menu-item" onclick="switchTab('tasks')">📋 任務清單</div>
+        <div id="menu-passwords" class="menu-item" onclick="switchTab('passwords')">🔒 密碼區</div>
+
+        <div class="file-status-area">
+            <div id="file-status" style="font-size:12px; color:var(--text-secondary); margin-bottom:10px; text-align:center;">🔴 尚未連線 <br>請授權讀取 data.json</div>
+            <button class="btn primary" onclick="loadFile()">📂 選擇 data.json 檔案</button>
+        </div>
+    </div>
+
+    <!-- 主畫面 -->
+    <div class="main-content">
+        <!-- 未連線提示 -->
+        <div id="no-data-msg" style="text-align:center; padding-top: 100px;">
+            <h2 style="color:var(--text-secondary); margin-bottom: 15px;">請先點擊左下角「選擇 data.json」按鈕</h2>
+            <p style="color:#666;">授權後即可在此網頁直接新增、修改，並自動儲存回該檔案。</p>
+        </div>
+
+        <!-- App 內容注入區 -->
+        <div id="app-container" style="display:none; max-width: 900px; animation: fadeIn 0.3s;"></div>
+    </div>
+
+    <!-- 新增對話框 Modal -->
+    <div id="modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modal-title" class="modal-title">新增...</h3>
+            <div id="modal-form"></div>
+            <div class="modal-actions">
+                <button class="btn btn-small" onclick="closeModal()">取消</button>
+                <button class="btn btn-small primary" onclick="submitModal()">確認儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ================= 狀態變數 ================= */
+        let appData = null;
+        let fileHandle = null;
+        let currentTab = 'favorites';
+        let modalContext = null; // 紀錄當下正在新增什麼 (分類/項目/密碼)
+
+        /* ================= 檔案存取 (File System API) ================= */
+        async function loadFile() {
+            try {
+                // 叫出檔案選擇窗，限定只能選 JSON
+                [fileHandle] = await window.showOpenFilePicker({
+                    types: [{ description: 'JSON 資料檔', accept: {'application/json': ['.json']} }]
+                });
+                
+                const file = await fileHandle.getFile();
+                const content = await file.text();
+                appData = JSON.parse(content);
+                
+                // UI 狀態更新
+                document.getElementById('file-status').innerHTML = '<span style="color:#4ade80;">🟢 已連線連線</span><br>修改會自動儲存';
+                document.getElementById('file-status').parentElement.querySelector('.btn').style.display = 'none'; // 隱藏按鈕
+                document.getElementById('no-data-msg').style.display = 'none';
+                document.getElementById('app-container').style.display = 'block';
+                
+                renderApp();
+            } catch (e) {
+                console.error("檔案載入失敗", e);
+            }
+        }
+
+        async function saveData() {
+            if (!fileHandle || !appData) return;
+            try {
+                // 自動寫入覆蓋原檔案
+                const writable = await fileHandle.createWritable();
+                await writable.write(JSON.stringify(appData, null, 4));
+                await writable.close();
+                console.log("儲存成功");
+            } catch (e) {
+                alert('自動儲存失敗，可能權限已過期。請重新整理網頁再次選取。');
+            }
+        }
+
+        /* ================= 渲染邏輯 ================= */
+        function switchTab(tabId) {
+            currentTab = tabId;
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+            document.getElementById('menu-' + tabId).classList.add('active');
+            if(appData) renderApp();
+        }
+
+        function renderApp() {
+            const container = document.getElementById('app-container');
+            container.innerHTML = ''; // 清空
+
+            let titleStr = '';
+            if(currentTab === 'favorites') titleStr = '常用網站';
+            else if(currentTab === 'notes') titleStr = '便條紙';
+            else if(currentTab === 'tasks') titleStr = '任務清單';
+            else titleStr = '密碼區';
+
+            let addBtnHtml = '';
+            if (currentTab !== 'passwords') {
+                addBtnHtml = `<button class="btn btn-small" onclick="openModal('add_category')">＋新增分類</button>`;
+            } else {
+                addBtnHtml = `<button class="btn btn-small" onclick="openModal('add_password')">＋新增密碼</button>`;
+            }
+
+            let html = `
+                <div class="section-header">
+                    <h2 class="section-title">${titleStr}</h2>
+                    ${addBtnHtml}
+                </div>
+            `;
+
+            if (currentTab === 'passwords') {
+                html += renderPasswordsBlock();
+            } else if (currentTab === 'tasks') {
+                html += renderTasksBlock();
+            } else {
+                html += renderCategoryBlock(appData[currentTab], currentTab);
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderTasksBlock() {
+            if (!appData.tasks) appData.tasks = []; // Fallback
+            let html = '';
+            appData.tasks.forEach((cat, catIdx) => {
+                const isCollapsed = cat.collapsed ? 'collapsed' : '';
+                html += `
+                <div class="category" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, ${catIdx})">
+                    <div class="category-header">
+                        <div class="category-title-area" draggable="true" ondragstart="handleCategoryDragStart(event, ${catIdx})" ondragend="handleCategoryDragEnd(event)" onclick="toggleCategory(${catIdx})">
+                            <span class="toggle-icon ${isCollapsed}">▼</span>
+                            <div class="category-name">${cat.category}</div>
+                        </div>
+                        <div>
+                            <button class="btn btn-small" onclick="openModal('add_task', ${catIdx})">＋新增任務</button>
+                            <button class="btn btn-small" onclick="openModal('edit_category', ${catIdx})">✏️</button>
+                            <button class="btn btn-small" style="color:var(--danger-color); border-color:transparent;" onclick="deleteData('category', ${catIdx})">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="task-list ${isCollapsed}">
+                `;
+                if (!cat.items) cat.items = [];
+                cat.items.forEach((task, taskIdx) => {
+                    const statusStr = task.status === 'done' ? '完成' : task.status === 'in_progress' ? '進行中' : '未開始';
+                    html += `
+                    <div class="task-item" draggable="true" ondragstart="handleDragStart(event, ${catIdx}, ${taskIdx})" ondragend="handleDragEnd(event)">
+                        <div class="status-badge status-${task.status}" onclick="toggleTaskStatus(${catIdx}, ${taskIdx})">${statusStr}</div>
+                        <div class="task-text ${task.status === 'done' ? 'status-done' : ''}">${task.text}</div>
+                        <div class="task-actions">
+                            <button class="btn btn-small" onclick="openModal('edit_task', ${catIdx}, ${taskIdx})">✏️</button>
+                            <button class="btn btn-small" style="color:var(--danger-color); border-color:transparent;" onclick="deleteData('task', ${catIdx}, ${taskIdx})">🗑️</button>
+                        </div>
+                    </div>`;
+                });
+                html += `</div></div>`;
+            });
+            return html;
+        }
+
+        async function toggleTaskStatus(catIdx, taskIdx) {
+            const task = appData.tasks[catIdx].items[taskIdx];
+            if (task.status === 'not_started') task.status = 'in_progress';
+            else if (task.status === 'in_progress') task.status = 'done';
+            else task.status = 'not_started';
+            
+            await saveData();
+            renderApp();
+        }
+
+        function renderCategoryBlock(categories, tabName) {
+            let html = '';
+            categories.forEach((cat, catIdx) => {
+                const isCollapsed = cat.collapsed ? 'collapsed' : '';
+                html += `
+                <div class="category" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, ${catIdx})">
+                    <div class="category-header">
+                        <div class="category-title-area" draggable="true" ondragstart="handleCategoryDragStart(event, ${catIdx})" ondragend="handleCategoryDragEnd(event)" onclick="toggleCategory(${catIdx})">
+                            <span class="toggle-icon ${isCollapsed}">▼</span>
+                            <div class="category-name">${cat.category}</div>
+                        </div>
+                        <div>
+                            <button class="btn btn-small" onclick="openModal('add_item', ${catIdx})">＋新增項目</button>
+                            <button class="btn btn-small" onclick="openModal('edit_category', ${catIdx})">✏️</button>
+                            <button class="btn btn-small" style="color:var(--danger-color); border-color:transparent;" onclick="deleteData('category', ${catIdx})">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="list-container ${isCollapsed}">
+                `;
+                cat.items.forEach((item, itemIdx) => {
+                    if (tabName === 'notes') {
+                        const bgColor = item.color || '#fde047';
+                        const w = item.width ? `width: ${item.width};` : '';
+                        const h = item.height ? `height: ${item.height};` : '';
+                        html += `
+                            <div class="item-card note-card" style="background-color: ${bgColor}; ${w} ${h}" draggable="true" ondragstart="handleDragStart(event, ${catIdx}, ${itemIdx})" ondragend="handleDragEnd(event)" data-cat-idx="${catIdx}" data-item-idx="${itemIdx}">
+                                <button class="edit-btn" onclick="openModal('edit_item', ${catIdx}, ${itemIdx})">✏️</button>
+                                <button class="delete-btn" onclick="deleteData('item', ${catIdx}, ${itemIdx})">✕</button>
+                                <div class="item-title">${item.content}</div>
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <a href="${item.url || '#'}" target="_blank" class="item-card" draggable="true" ondragstart="handleDragStart(event, ${catIdx}, ${itemIdx})" ondragend="handleDragEnd(event)">
+                                <button class="edit-btn" onclick="event.preventDefault(); openModal('edit_item', ${catIdx}, ${itemIdx})">✏️</button>
+                                <button class="delete-btn" onclick="event.preventDefault(); deleteData('item', ${catIdx}, ${itemIdx})">✕</button>
+                                <div class="item-title">${item.title}</div>
+                                <div class="item-desc">${item.desc || ''}</div>
+                            </a>
+                        `;
+                    }
+                });
+                html += `</div></div>`;
+            });
+            return html;
+        }
+
+        function renderPasswordsBlock() {
+            let html = `<div class="pwd-container">`;
+            appData.passwords.forEach((pwd, idx) => {
+                html += `
+                <div class="pwd-card">
+                    <button class="delete-btn" onclick="deleteData('password', ${idx})">✕</button>
+                    <div class="pwd-info">
+                        <div class="pwd-platform">${pwd.platform}</div>
+                        <div class="pwd-account">${pwd.account}</div>
+                    </div>
+                    <div class="pwd-actions">
+                        <div class="pwd-mask" data-pwd="${pwd.password}" onclick="togglePassword(this)">********</div>
+                        <button class="btn btn-small" onclick="copyPassword(this)">複製密碼</button>
+                    </div>
+                </div>`;
+            });
+            html += `</div>`;
+            return html;
+        }
+
+        /* ================= 拖曳與收合邏輯 ================= */
+        async function toggleCategory(catIdx) {
+            const cat = appData[currentTab][catIdx];
+            cat.collapsed = !cat.collapsed;
+            await saveData();
+            renderApp();
+        }
+
+        let draggedItemInfo = null;
+        let draggedCategoryInfo = null;
+
+        function handleDragStart(event, catIdx, itemIdx) {
+            event.stopPropagation();
+            draggedItemInfo = { catIdx, itemIdx };
+            draggedCategoryInfo = null;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', 'runboard-item');
+            setTimeout(() => {
+                event.target.classList.add('dragging');
+            }, 0);
+        }
+
+        function handleCategoryDragStart(event, catIdx) {
+            event.stopPropagation();
+            draggedCategoryInfo = { catIdx };
+            draggedItemInfo = null;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', 'runboard-category');
+            setTimeout(() => {
+                event.target.closest('.category').classList.add('dragging');
+            }, 0);
+        }
+
+        function handleCategoryDragEnd(event) {
+            event.target.closest('.category').classList.remove('dragging');
+            draggedCategoryInfo = null;
+            document.querySelectorAll('.category').forEach(el => el.classList.remove('drag-over'));
+        }
+
+        function handleDragEnd(event) {
+            event.target.classList.remove('dragging');
+            draggedItemInfo = null;
+            document.querySelectorAll('.category').forEach(el => el.classList.remove('drag-over'));
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault(); // 允許 Drop
+            event.dataTransfer.dropEffect = 'move';
+            event.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(event) {
+            const catEl = event.currentTarget;
+            if (!catEl.contains(event.relatedTarget)) {
+                catEl.classList.remove('drag-over');
+            }
+        }
+
+        async function handleDrop(event, targetCatIdx) {
+            event.preventDefault();
+            event.stopPropagation();
+            const catEl = event.currentTarget;
+            catEl.classList.remove('drag-over');
+
+            if (draggedItemInfo) {
+                const sourceCatIdx = draggedItemInfo.catIdx;
+                const sourceItemIdx = draggedItemInfo.itemIdx;
+
+                if (sourceCatIdx === targetCatIdx) return;
+
+                const sourceList = appData[currentTab][sourceCatIdx].items;
+                const targetList = appData[currentTab][targetCatIdx].items;
+                
+                const [movedItem] = sourceList.splice(sourceItemIdx, 1);
+                targetList.push(movedItem);
+
+                await saveData();
+                renderApp();
+            } else if (draggedCategoryInfo) {
+                const sourceCatIdx = draggedCategoryInfo.catIdx;
+                if (sourceCatIdx === targetCatIdx) return;
+
+                const catList = appData[currentTab];
+                const [movedCat] = catList.splice(sourceCatIdx, 1);
+                catList.splice(targetCatIdx, 0, movedCat);
+
+                await saveData();
+                renderApp();
+            }
+        }
+
+        /* ================= CRUD 邏輯 ================= */
+        // 刪除處理
+        async function deleteData(type, index1, index2) {
+            if(!confirm('確定要刪除嗎？')) return;
+
+            if (type === 'category') {
+                appData[currentTab].splice(index1, 1);
+            } else if (type === 'item') {
+                appData[currentTab][index1].items.splice(index2, 1);
+            } else if (type === 'password') {
+                appData.passwords.splice(index1, 1);
+            } else if (type === 'task') {
+                appData.tasks[index1].items.splice(index2, 1);
+            }
+
+            await saveData();
+            renderApp();
+        }
+
+        /* ================= 互動 Modal 邏輯 ================= */
+        function openModal(action, catIndex = null, itemIndex = null) {
+            modalContext = { action, catIndex, itemIndex };
+            const titleEl = document.getElementById('modal-title');
+            const formEl = document.getElementById('modal-form');
+            let formHtml = '';
+
+            if (action === 'add_category') {
+                titleEl.innerText = '新增分類';
+                formHtml = `<div class="form-group"><label>分類名稱</label><input type="text" id="ipt-cat-name" placeholder="例如: 🎨 設計資源"></div>`;
+            } else if (action === 'edit_category') {
+                titleEl.innerText = '編輯分類';
+                const catName = appData[currentTab][catIndex].category;
+                formHtml = `<div class="form-group"><label>分類名稱</label><input type="text" id="ipt-cat-name" value="${catName}"></div>`;
+            } else if (action === 'add_item') {
+                titleEl.innerText = currentTab === 'notes' ? '新增便條紙' : '新增項目';
+                if (currentTab === 'notes') {
+                    formHtml = `
+                        <div class="form-group">
+                            <label>便條紙顏色</label>
+                            <input type="color" id="ipt-color" value="#fde047" style="height:30px; border-radius:4px; padding:0; cursor:pointer;">
+                        </div>
+                        <div class="form-group"><label>內容</label><textarea id="ipt-content" rows="6" placeholder="筆記內容..." style="width:100%; background:var(--bg-color); border:1px solid var(--border-color); color:white; padding:10px; border-radius:6px; outline:none; resize:vertical;"></textarea></div>`;
+                } else {
+                    formHtml = `
+                        <div class="form-group"><label>名稱</label><input type="text" id="ipt-title" placeholder="例如: Google"></div>
+                        <div class="form-group"><label>網址/連結</label><input type="text" id="ipt-url" placeholder="https://..."></div>
+                        <div class="form-group"><label>補充說明 (選填)</label><input type="text" id="ipt-desc" placeholder="..."></div>
+                    `;
+                }
+            } else if (action === 'edit_item') {
+                titleEl.innerText = currentTab === 'notes' ? '編輯便條紙' : '編輯項目';
+                const item = appData[currentTab][catIndex].items[itemIndex];
+                if (currentTab === 'notes') {
+                    const bgColor = item.color || '#fde047';
+                    formHtml = `
+                        <div class="form-group">
+                            <label>便條紙顏色</label>
+                            <input type="color" id="ipt-color" value="${bgColor}" style="height:30px; border-radius:4px; padding:0; cursor:pointer;">
+                        </div>
+                        <div class="form-group"><label>內容</label><textarea id="ipt-content" rows="6" style="width:100%; background:var(--bg-color); border:1px solid var(--border-color); color:white; padding:10px; border-radius:6px; outline:none; resize:vertical;">${item.content}</textarea></div>`;
+                } else {
+                    formHtml = `
+                        <div class="form-group"><label>名稱</label><input type="text" id="ipt-title" value="${item.title}"></div>
+                        <div class="form-group"><label>網址/連結</label><input type="text" id="ipt-url" value="${item.url}"></div>
+                        <div class="form-group"><label>補充說明 (選填)</label><input type="text" id="ipt-desc" value="${item.desc}"></div>
+                    `;
+                }
+            } else if (action === 'add_task') {
+                titleEl.innerText = '新增任務';
+                formHtml = `<div class="form-group"><label>任務內容</label><input type="text" id="ipt-task" placeholder="輸入任務..."></div>`;
+            } else if (action === 'edit_task') {
+                titleEl.innerText = '編輯任務';
+                const taskText = appData.tasks[catIndex].items[itemIndex].text;
+                formHtml = `<div class="form-group"><label>任務內容</label><input type="text" id="ipt-task" value="${taskText}"></div>`;
+            } else if (action === 'add_password') {
+                titleEl.innerText = '新增一組密碼';
+                formHtml = `
+                    <div class="form-group"><label>平台名稱</label><input type="text" id="ipt-plat" placeholder="例如: Google"></div>
+                    <div class="form-group"><label>帳號 (選填)</label><input type="text" id="ipt-acc" placeholder="信箱或使用者名稱"></div>
+                    <div class="form-group"><label>密碼</label><input type="text" id="ipt-pwd" placeholder="輸入密碼..."></div>
+                `;
+            }
+
+            formEl.innerHTML = formHtml;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            modalContext = null;
+        }
+
+        async function submitModal() {
+            if (!modalContext) return;
+            const { action, catIndex, itemIndex } = modalContext;
+
+            if (action === 'add_category' || action === 'edit_category') {
+                const val = document.getElementById('ipt-cat-name').value.trim();
+                if(!val) return alert('請輸入名稱');
+                if (action === 'add_category') {
+                    appData[currentTab].push({ category: val, items: [] });
+                } else {
+                    appData[currentTab][catIndex].category = val;
+                }
+            } 
+            else if (action === 'add_item' || action === 'edit_item') {
+                if (currentTab === 'notes') {
+                    const content = document.getElementById('ipt-content').value.trim();
+                    const color = document.getElementById('ipt-color').value;
+                    if(!content) return alert('內容為必填');
+                    if (action === 'add_item') {
+                        appData[currentTab][catIndex].items.push({ content, color });
+                    } else {
+                        appData[currentTab][catIndex].items[itemIndex].content = content;
+                        appData[currentTab][catIndex].items[itemIndex].color = color;
+                    }
+                } else {
+                    const title = document.getElementById('ipt-title').value.trim();
+                    const url = document.getElementById('ipt-url').value.trim();
+                    const desc = document.getElementById('ipt-desc').value.trim();
+                    if(!title) return alert('名稱為必填');
+                    
+                    if (action === 'add_item') {
+                        appData[currentTab][catIndex].items.push({ title, url, desc });
+                    } else {
+                        appData[currentTab][catIndex].items[itemIndex] = { title, url, desc };
+                    }
+                }
+            }
+            else if (action === 'add_task') {
+                const text = document.getElementById('ipt-task').value.trim();
+                if(!text) return alert('內容為必填');
+                if (!appData.tasks[catIndex].items) appData.tasks[catIndex].items = [];
+                appData.tasks[catIndex].items.push({ text, status: 'not_started' });
+            }
+            else if (action === 'edit_task') {
+                const text = document.getElementById('ipt-task').value.trim();
+                if(!text) return alert('內容為必填');
+                appData.tasks[catIndex].items[itemIndex].text = text;
+            }
+            else if (action === 'add_password') {
+                const platform = document.getElementById('ipt-plat').value.trim();
+                const account = document.getElementById('ipt-acc').value.trim();
+                const password = document.getElementById('ipt-pwd').value.trim();
+                if(!platform || !password) return alert('平台名稱與密碼為必填');
+                appData.passwords.push({ platform, account, password });
+            }
+
+            await saveData();
+            closeModal();
+            renderApp();
+        }
+
+        /* ================= 密碼功能小工具 ================= */
+        function togglePassword(element) {
+            const realPwd = element.getAttribute('data-pwd');
+            if (element.innerText === '********') {
+                element.innerText = realPwd;
+                element.style.color = 'var(--accent-color)';
+            } else {
+                element.innerText = '********';
+                element.style.color = '';
+            }
+        }
+
+        function copyPassword(btnElement) {
+            const maskElement = btnElement.previousElementSibling;
+            const realPwd = maskElement.getAttribute('data-pwd');
+            
+            navigator.clipboard.writeText(realPwd).then(() => {
+                const originalText = btnElement.innerText;
+                btnElement.innerText = '已複製！';
+                btnElement.style.color = '#4ade80';
+                btnElement.style.borderColor = '#4ade80';
+
+                setTimeout(() => {
+                    btnElement.innerText = originalText;
+                    btnElement.style.color = '';
+                    btnElement.style.borderColor = '';
+                }, 2000);
+            }).catch(err => alert('複製失敗: ' + err));
+        }
+
+        /* ================= 監聽便條紙調整大小 ================= */
+        document.addEventListener('mouseup', async (e) => {
+            const card = e.target.closest('.note-card');
+            if (card && currentTab === 'notes') {
+                const catIdx = card.getAttribute('data-cat-idx');
+                const itemIdx = card.getAttribute('data-item-idx');
+                if (catIdx !== null && itemIdx !== null && appData && appData.notes[catIdx]) {
+                    const item = appData.notes[catIdx].items[itemIdx];
+                    const newW = card.style.width;
+                    const newH = card.style.height;
+                    let changed = false;
+                    if (newW && item.width !== newW) { item.width = newW; changed = true; }
+                    if (newH && item.height !== newH) { item.height = newH; changed = true; }
+                    if (changed) {
+                        await saveData();
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
