@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RunBoard - 工作區首頁</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/storage.js"></script>
+    <script src="js/nav.js"></script>
+</head>
+<body>
+    <div id="sidebar"></div>
+    <div class="main-content">
+        <!-- 未連線提示 -->
+        <div id="no-data-msg" style="text-align: center; padding-top: 100px;">
+            <h2 style="color: var(--text-secondary); margin-bottom: 15px;">歡迎使用 RunBoard 工作區</h2>
+            <p style="color: #666; margin-bottom: 25px;">請先點擊左下角「選擇 data.json」以授權讀取您的個人工作資料。</p>
+            <button class="btn primary" style="width: auto; display: inline-block; padding: 10px 24px;" onclick="Storage.selectFile()">📂 立即選擇 data.json 檔案</button>
+        </div>
+
+        <!-- 儀表板總覽呈現區 -->
+        <div id="app-container" style="display: none; max-width: 1000px;">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">🏠 工作區儀表板</h2>
+                    <p style="color: var(--text-secondary); font-size: 14px; margin-top: 6px;">快速查看當前各工具統計與快速傳送門</p>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <a href="favorites.html" class="dash-card">
+                    <div class="dash-card-icon">🔖</div>
+                    <div class="dash-card-title">常用網站</div>
+                    <div id="stat-favorites" class="dash-card-count">載入中...</div>
+                </a>
+
+                <a href="notes.html" class="dash-card">
+                    <div class="dash-card-icon">📝</div>
+                    <div class="dash-card-title">便條紙</div>
+                    <div id="stat-notes" class="dash-card-count">載入中...</div>
+                </a>
+
+                <a href="tasks.html" class="dash-card">
+                    <div class="dash-card-icon">📋</div>
+                    <div class="dash-card-title">任務清單</div>
+                    <div id="stat-tasks" class="dash-card-count">載入中...</div>
+                </a>
+
+                <a href="passwords.html" class="dash-card">
+                    <div class="dash-card-icon">🔒</div>
+                    <div class="dash-card-title">密碼區</div>
+                    <div id="stat-passwords" class="dash-card-count">載入中...</div>
+                </a>
+            </div>
+        </div>
+    </div>
+    <script src="js/index.js"></script>
+</body>
+</html>

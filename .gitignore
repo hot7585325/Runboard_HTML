@@ -1,0 +1,9 @@
+# 忽略包含真實個人敏感資訊與密碼的資料檔
+data.json
+**/data.json
+*.private.json
+
+# 編輯器與暫存檔
+.DS_Store
+Thumbs.db
+*.tmp
