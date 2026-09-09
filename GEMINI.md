@@ -14,7 +14,9 @@
 - **狀態防禦與提示**：未連線或權限逾期時，統一透過 `Storage` 模組切換 `#no-data-msg` 與 `#app-container` 容器顯示，並在側邊欄指示燈提示一鍵恢復授權。
 
 ## 3. 共用基礎組件 (Shared Components)
-- **樣式 (CSS)**：所有頁面共用 `css/style.css`，統一管理 Design Tokens（色彩、間距、圓角、現代暗色主題）。
+- **樣式 (CSS 雙層模組化架構)**：
+  - **共用基底 (`css/style.css`)**：統一管理 Design Tokens（色彩、間距、圓角、現代暗色主題）與全站 App Shell 組件（Reset、Sidebar、Main Content、通用按鈕、搜尋列、Modal 彈窗）。所有頁面皆必須引入。
+  - **功能專屬樣式 (`css/my_tool.css`)**：落實樣式分離，各獨立功能頁面應建立自己專屬的 CSS（例如 `favorites.html` 對應 `css/favorites.css`、`folder_graph.html` 對應 `css/folder_graph.css`），禁止將特定單一工具的視覺/動畫全域塞入 `style.css`。
 - **導覽列 (Nav)**：統一由 `js/nav.js` 自動渲染到 `<div id="sidebar"></div>`，自動偵測當前檔名並高亮 active 項目，整合即時連線指示燈。
 - **對話框 (Modal)**：表單輸入/編輯一律調用共用 `js/modal.js`（`Modal.open(...)`），禁止手刻獨立 dialog 或原生 prompt。
 - **首頁儀表板 (Dashboard)**：`index.html` 應作為工作區概覽，即時讀取資料並以卡片統計各模組關鍵數據與傳送門。
@@ -26,6 +28,7 @@
    - `<head>` 依序引入：
      ```html
      <link rel="stylesheet" href="css/style.css">
+     <link rel="stylesheet" href="css/my_tool.css"> <!-- 專屬樣式（若有） -->
      <script src="js/storage.js"></script>
      <script src="js/nav.js"></script>
      <script src="js/modal.js"></script>
@@ -35,4 +38,4 @@
      - `<div class="main-content">` 內含 `#no-data-msg`（未連線提示）與 `#app-container`（主內容區）。
    - 結尾引入專屬邏輯 `<script src="js/my_tool.js"></script>`。
 2. **註冊導覽**：在 `js/nav.js` 的 `NAV_ITEMS` 加入新工具名稱與路徑。
-3. **專屬邏輯**：建立 `js/my_tool.js`，以 IIFE 封裝，並於 `DOMContentLoaded` 調用 `Storage.init()` 進行資料初始化與渲染。
+3. **專屬樣式與邏輯**：建立 `css/my_tool.css` 管理該模組視覺，並建立 `js/my_tool.js`（以 IIFE 封裝），於 `DOMContentLoaded` 調用 `Storage.init()` 進行資料初始化與渲染。

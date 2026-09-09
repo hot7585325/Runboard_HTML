@@ -1,0 +1,157 @@
+﻿/* ================= 任務清單區 (Tasks) ================= */
+.task-progress-badge {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background-color: var(--hover-bg);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.task-progress-badge.all-done {
+    background-color: rgba(74, 222, 128, 0.15);
+    color: var(--success-color);
+    border-color: rgba(74, 222, 128, 0.3);
+}
+
+.task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.task-list.collapsed {
+    display: none;
+}
+
+.task-item {
+    background-color: var(--sidebar-bg);
+    border: 1px solid var(--border-color);
+    padding: 15px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    cursor: grab;
+    transition: all 0.2s ease;
+}
+
+.task-item.dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+}
+
+.task-item.drag-target-over {
+    border-color: var(--accent-color) !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4) !important;
+    transform: scale(1.01);
+}
+
+.task-item:active {
+    cursor: grabbing;
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.status-not_started {
+    background-color: #374151;
+    color: #D1D5DB;
+}
+
+.status-in_progress {
+    background-color: #1e3a8a;
+    color: #93C5FD;
+}
+
+.status-done {
+    background-color: #064e3b;
+    color: #6EE7B7;
+    text-decoration: line-through;
+}
+
+.task-text {
+    flex: 1;
+    font-size: 16px;
+    color: white;
+    transition: color 0.2s;
+}
+
+.task-text.status-done {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+}
+
+.task-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* 任務截止日期標籤 */
+.task-due-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.task-due-badge.overdue {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+.task-due-badge.today {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+.task-due-badge.tomorrow {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border-color: rgba(59, 130, 246, 0.35);
+}
+
+.task-due-badge.future {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+}
+
+.task-due-badge.done {
+    background-color: transparent;
+    color: #6b7280;
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+.stat-overdue-highlight {
+    color: #f87171;
+    font-weight: 600;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.8);
+    cursor: pointer;
+}

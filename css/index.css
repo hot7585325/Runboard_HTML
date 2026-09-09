@@ -1,0 +1,41 @@
+﻿/* ================= 首頁儀表板卡片 (Dashboard) ================= */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.dash-card {
+    background-color: var(--sidebar-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 25px;
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dash-card:hover {
+    border-color: var(--accent-color);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.dash-card-icon {
+    font-size: 32px;
+}
+
+.dash-card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: white;
+}
+
+.dash-card-count {
+    font-size: 14px;
+    color: var(--text-secondary);
+}

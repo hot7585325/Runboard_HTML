@@ -1,0 +1,142 @@
+﻿/* ================= 分類與書籤卡片 (Favorites) ================= */
+.category {
+    margin-bottom: 30px;
+    padding: 10px;
+    margin-left: -10px;
+    margin-right: -10px;
+    border-radius: var(--radius-md);
+    border: 2px dashed transparent;
+    transition: all 0.2s;
+}
+
+.category.drag-over {
+    border-color: var(--accent-color);
+    background-color: rgba(59, 130, 246, 0.05);
+}
+
+.category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.category-title-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+    padding: 4px 8px;
+    margin-left: -8px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.category-title-area:hover {
+    background-color: var(--hover-bg);
+}
+
+.toggle-icon {
+    font-size: 12px;
+    transition: transform 0.2s;
+    color: var(--text-secondary);
+}
+
+.toggle-icon.collapsed {
+    transform: rotate(-90deg);
+}
+
+.category-name {
+    font-size: 18px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.list-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 15px;
+}
+
+.list-container.collapsed {
+    display: none;
+}
+
+.item-card {
+    background-color: var(--sidebar-bg);
+    border: 1px solid var(--border-color);
+    padding: 15px;
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    position: relative;
+    cursor: grab;
+}
+
+.item-card:hover {
+    border-color: #4a4a4a;
+    transform: translateY(-2px);
+}
+
+.item-card.dragging,
+.category.dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+}
+
+.item-card.drag-target-over {
+    border-color: var(--accent-color) !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4) !important;
+    transform: scale(1.01);
+}
+
+.item-card:active {
+    cursor: grabbing;
+}
+
+.item-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 48px;
+}
+
+.fav-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    vertical-align: middle;
+    flex-shrink: 0;
+    object-fit: contain;
+}
+
+.item-title {
+    color: white;
+    font-weight: 500;
+    font-size: 16px;
+    margin-right: 20px;
+}
+
+.item-card-header .item-title {
+    margin-right: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.item-desc {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.item-card:hover .delete-btn,
+.item-card:hover .edit-btn {
+    opacity: 1;
+}

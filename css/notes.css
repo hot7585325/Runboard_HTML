@@ -1,0 +1,135 @@
+﻿/* ================= 便條紙區 (Notes) ================= */
+.note-card {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    line-height: 1.6;
+    min-height: 200px;
+    overflow: auto;
+    resize: both;
+    box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.15);
+    justify-content: flex-start;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.note-card:hover {
+    border-color: rgba(0, 0, 0, 0.3);
+    box-shadow: 2px 6px 14px rgba(0, 0, 0, 0.25);
+    transform: translateY(-2px);
+}
+
+.note-card.drag-target-over {
+    border-color: var(--accent-color) !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4) !important;
+    transform: scale(1.01);
+}
+
+.note-card .item-title {
+    color: rgba(0, 0, 0, 0.85);
+    font-weight: 400;
+    font-size: 15px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin-top: 5px;
+    width: 100%;
+}
+
+.note-card .delete-btn,
+.note-card .edit-btn {
+    color: rgba(0, 0, 0, 0.4);
+}
+
+.note-card .delete-btn:hover {
+    color: #dc2626;
+}
+
+.note-card .edit-btn:hover {
+    color: #2563eb;
+}
+
+.note-card .note-link {
+    color: #1d4ed8;
+    text-decoration: underline;
+    word-break: break-all;
+    transition: color 0.2s;
+    font-weight: 500;
+}
+
+.note-card .note-link:hover {
+    color: #1e40af;
+    text-decoration: underline;
+}
+
+.note-card::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.note-card::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+.note-card::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+/* 深色便簽文字與控制項自動反色 */
+.note-card.dark-theme .item-title {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.note-card.dark-theme .delete-btn,
+.note-card.dark-theme .edit-btn {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.note-card.dark-theme .note-link {
+    color: #93c5fd;
+}
+
+/* 便條紙行內就地編輯 (Inline Editor) */
+.inline-note-editor {
+    width: 100%;
+    min-height: 100px;
+    background: rgba(255, 255, 255, 0.4);
+    color: rgba(0, 0, 0, 0.88);
+    border: 1px dashed rgba(0, 0, 0, 0.35);
+    border-radius: 6px;
+    padding: 8px;
+    font-family: inherit;
+    font-size: 15px;
+    line-height: 1.6;
+    outline: none;
+    resize: vertical;
+    box-sizing: border-box;
+    display: block;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.note-card.dark-theme .inline-note-editor {
+    background: rgba(0, 0, 0, 0.35);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.inline-note-editor:focus {
+    background: rgba(255, 255, 255, 0.65);
+    border-color: rgba(0, 0, 0, 0.6);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
+}
+
+.note-card.dark-theme .inline-note-editor:focus {
+    background: rgba(0, 0, 0, 0.5);
+    border-color: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+}
+
+.inline-editor-tips {
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.55);
+    margin-top: 6px;
+    user-select: none;
+}
+
+.note-card.dark-theme .inline-editor-tips {
+    color: rgba(255, 255, 255, 0.55);
+}

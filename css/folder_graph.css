@@ -1,0 +1,442 @@
+﻿/* ================= 🗂️ 目錄節點圖 (Folder Graph) ================= */
+.main-content.folder-graph-page {
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.graph-view-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #121214;
+    background-image: 
+        radial-gradient(circle, #27272a 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+
+.graph-toolbar {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    z-index: 100;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: rgba(32, 32, 32, 0.88);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.graph-toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.graph-toolbar-group select,
+.graph-toolbar-group input {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+}
+
+.graph-toolbar-group select:focus,
+.graph-toolbar-group input:focus {
+    border-color: var(--accent-color);
+}
+
+.graph-toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--sidebar-bg);
+    color: var(--text-primary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.graph-toolbar-btn:hover {
+    background: var(--hover-bg);
+    color: #fff;
+    border-color: #555;
+}
+
+.graph-toolbar-btn.primary {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: #fff;
+}
+
+.graph-toolbar-btn.primary:hover {
+    background: var(--accent-hover);
+}
+
+.graph-toolbar-info {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.graph-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+}
+
+/* 畫布與變形容器 */
+.graph-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+    user-select: none;
+}
+
+.graph-canvas.is-panning {
+    cursor: grabbing;
+}
+
+.graph-transform-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    pointer-events: none;
+}
+
+/* SVG 連線層 */
+.graph-svg-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.graph-edge {
+    fill: none;
+    stroke: #475569;
+    stroke-width: 2.5px;
+    transition: stroke 0.2s, stroke-width 0.2s;
+}
+
+.graph-edge:hover,
+.graph-edge.active {
+    stroke: #60a5fa;
+    stroke-width: 3.5px;
+}
+
+/* 節點 DOM 容器層 */
+.graph-nodes-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: auto;
+}
+
+/* Godot GraphNode 風格節點 */
+.graph-node {
+    position: absolute;
+    width: 300px;
+    background: #202024;
+    border: 1px solid #333338;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    font-size: 13px;
+}
+
+.graph-node:hover {
+    border-color: #4b5563;
+}
+
+.graph-node.is-selected {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4), 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.graph-node.is-root {
+    border-top: 3px solid #f59e0b;
+}
+
+.graph-node.is-collapsed {
+    opacity: 0.9;
+}
+
+/* 節點標題列 (Header / Title Bar) */
+.graph-node-header {
+    background: #28282e;
+    padding: 10px 12px;
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    border-bottom: 1px solid #323238;
+    cursor: move;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.graph-node-title {
+    font-weight: 600;
+    color: #f3f4f6;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.graph-node-title-icon {
+    font-size: 15px;
+    flex-shrink: 0;
+}
+
+.graph-node-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.graph-node-btn-toggle {
+    background: transparent;
+    border: 1px solid #404048;
+    color: #9ca3af;
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1;
+    padding: 0;
+    transition: all 0.15s;
+}
+
+.graph-node-btn-toggle:hover {
+    background: #3a3a42;
+    color: #fff;
+    border-color: #60a5fa;
+}
+
+/* 節點主體內容 (Body) */
+.graph-node-body {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #1e1e22;
+    border-bottom-left-radius: 7px;
+    border-bottom-right-radius: 7px;
+}
+
+.graph-node-path {
+    font-family: Consolas, Monaco, monospace;
+    font-size: 11px;
+    color: #9ca3af;
+    background: #141416;
+    padding: 4px 6px;
+    border-radius: 4px;
+    border: 1px solid #28282d;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    word-break: break-all;
+}
+
+.graph-node-stats-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.graph-node-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background: #27272a;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #e4e4e7;
+    border: 1px solid #3f3f46;
+}
+
+.graph-node-badge.badge-highlight {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.4);
+    color: #93c5fd;
+}
+
+/* 副檔名標籤群 (Extension Capsules) */
+.graph-node-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-height: 80px;
+    overflow-y: auto;
+}
+
+.ext-capsule {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    border: 1px solid transparent;
+}
+
+.ext-capsule.ext-cs {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border-color: rgba(16, 185, 129, 0.35);
+}
+
+.ext-capsule.ext-prefab {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border-color: rgba(59, 130, 246, 0.35);
+}
+
+.ext-capsule.ext-png, .ext-capsule.ext-jpg, .ext-capsule.ext-jpeg {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+.ext-capsule.ext-mat, .ext-capsule.ext-shader {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+    border-color: rgba(168, 85, 247, 0.35);
+}
+
+.ext-capsule.ext-json {
+    background: rgba(236, 72, 153, 0.15);
+    color: #f472b6;
+    border-color: rgba(236, 72, 153, 0.35);
+}
+
+.ext-capsule.ext-default {
+    background: #27272a;
+    color: #a1a1aa;
+    border-color: #3f3f46;
+}
+
+/* 節點底端按鈕 */
+.graph-node-footer {
+    display: flex;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+.graph-node-copy-btn {
+    width: 100%;
+    padding: 4px 8px;
+    font-size: 11px;
+    background: #26262b;
+    border: 1px solid #36363c;
+    border-radius: 4px;
+    color: #d1d5db;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.graph-node-copy-btn:hover {
+    background: #323238;
+    color: #fff;
+    border-color: #4b5563;
+}
+
+/* 插槽 (Slots / Ports) */
+.graph-slot {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #3b82f6;
+    border: 2px solid #1e1e22;
+    box-shadow: 0 0 6px rgba(59, 130, 246, 0.8);
+    top: 18px;
+    z-index: 10;
+}
+
+.graph-slot.input-slot {
+    left: -7px;
+    background: #38bdf8;
+}
+
+.graph-slot.output-slot {
+    right: -7px;
+    background: #60a5fa;
+}
+
+/* 節點收合時隱藏主體 */
+.graph-node.is-collapsed .graph-node-body {
+    display: none;
+}
+
+/* Toast 提示 */
+.graph-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #1f2937;
+    color: #fff;
+    border: 1px solid #374151;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+}
+
+.graph-toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
