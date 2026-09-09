@@ -29,20 +29,35 @@ const DashboardApp = (function () {
         let totalTasks = 0;
         let doneTasks = 0;
         let inProgressTasks = 0;
+        let overdueTasks = 0;
+
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
         if (data.tasks) {
             data.tasks.forEach(cat => {
                 if (cat.items) {
                     cat.items.forEach(t => {
                         totalTasks++;
-                        if (t.status === 'done') doneTasks++;
-                        else if (t.status === 'in_progress') inProgressTasks++;
+                        if (t.status === 'done') {
+                            doneTasks++;
+                        } else {
+                            if (t.status === 'in_progress') inProgressTasks++;
+                            if (t.dueDate && t.dueDate < todayStr) {
+                                overdueTasks++;
+                            }
+                        }
                     });
                 }
             });
         }
         const statTasksEl = document.getElementById('stat-tasks');
         if (statTasksEl) {
-            statTasksEl.innerText = `進行中 ${inProgressTasks} 項 · 已完成 ${doneTasks}/${totalTasks}`;
+            let statHtml = `進行中 ${inProgressTasks} 項 · 已完成 ${doneTasks}/${totalTasks}`;
+            if (overdueTasks > 0) {
+                statHtml += ` · <span class="stat-overdue-highlight">⚠️ 逾期 ${overdueTasks} 項</span>`;
+            }
+            statTasksEl.innerHTML = statHtml;
         }
 
         // 密碼區統計

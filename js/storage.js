@@ -87,6 +87,7 @@ const Storage = (function () {
         data.notes = parsed.notes || [];
         data.tasks = parsed.tasks || [];
         data.passwords = parsed.passwords || [];
+        data.folderGraphSnapshot = parsed.folderGraphSnapshot || null;
         isConnected = true;
         fileHandle = handle;
     }

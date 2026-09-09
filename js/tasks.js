@@ -23,6 +23,39 @@ const TasksApp = (function () {
             .replace(/'/g, '&#39;');
     }
 
+    // 計算截止日期狀態與產生 Badge HTML
+    function getDueDateBadge(dueDate, isDone) {
+        if (!dueDate) return '';
+
+        const parts = dueDate.split('-').map(Number);
+        if (parts.length < 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) return '';
+
+        const [y, m, d] = parts;
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const target = new Date(y, m - 1, d);
+
+        const diffMs = target.getTime() - today.getTime();
+        const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+        const formattedDate = `${String(m).padStart(2, '0')}/${String(d).padStart(2, '0')}`;
+
+        if (isDone) {
+            return `<span class="task-due-badge done" title="截止日: ${escapeHtml(dueDate)}">📅 ${formattedDate}</span>`;
+        }
+
+        if (diffDays < 0) {
+            const overdueDays = Math.abs(diffDays);
+            const text = overdueDays === 1 ? '⚠️ 逾期 1 天' : `⚠️ 逾期 ${overdueDays} 天`;
+            return `<span class="task-due-badge overdue" title="截止日: ${escapeHtml(dueDate)}">${text} (${formattedDate})</span>`;
+        } else if (diffDays === 0) {
+            return `<span class="task-due-badge today" title="截止日: ${escapeHtml(dueDate)}">⚡ 今天到期</span>`;
+        } else if (diffDays === 1) {
+            return `<span class="task-due-badge tomorrow" title="截止日: ${escapeHtml(dueDate)}">⏰ 明天到期</span>`;
+        } else {
+            return `<span class="task-due-badge future" title="截止日: ${escapeHtml(dueDate)}">📅 ${formattedDate}</span>`;
+        }
+    }
+
     function handleSearch(keyword) {
         searchKeyword = (keyword || '').trim().toLowerCase();
         render();
@@ -104,6 +137,7 @@ const TasksApp = (function () {
                     const status = task.status || 'not_started';
                     const statusStr = status === 'done' ? '完成' : status === 'in_progress' ? '進行中' : '未開始';
                     const doneClass = status === 'done' ? 'status-done' : '';
+                    const dueBadge = getDueDateBadge(task.dueDate, status === 'done');
 
                     html += `
                     <div class="task-item" draggable="true"
@@ -114,6 +148,7 @@ const TasksApp = (function () {
                         ondrop="TasksApp.handleItemDrop(event, ${catIdx}, ${taskIdx})">
                         <div class="status-badge status-${status}" onclick="TasksApp.toggleTaskStatus(${catIdx}, ${taskIdx})">${statusStr}</div>
                         <div class="task-text ${doneClass}">${escapeHtml(task.text || '')}</div>
+                        ${dueBadge}
                         <div class="task-actions">
                             <button class="btn btn-small" onclick="TasksApp.openEditTask(${catIdx}, ${taskIdx})">✏️</button>
                             <button class="btn btn-small" style="color:var(--danger-color); border-color:transparent;" onclick="TasksApp.deleteTask(${catIdx}, ${taskIdx})">🗑️</button>
@@ -343,16 +378,28 @@ const TasksApp = (function () {
     function openAddTask(catIdx) {
         Modal.open({
             title: '新增任務',
-            html: `<div class="form-group"><label>任務內容</label><input type="text" id="ipt-task" placeholder="輸入任務內容..."></div>`,
+            html: `
+                <div class="form-group">
+                    <label>任務內容</label>
+                    <input type="text" id="ipt-task" placeholder="輸入任務內容...">
+                </div>
+                <div class="form-group">
+                    <label>截止日期 (選填)</label>
+                    <input type="date" id="ipt-task-due">
+                </div>
+            `,
             onConfirm: async () => {
                 const text = document.getElementById('ipt-task').value.trim();
                 if (!text) {
                     alert('內容為必填');
                     return false;
                 }
+                const dueDate = document.getElementById('ipt-task-due').value || null;
                 const cat = getTasks()[catIdx];
                 if (!cat.items) cat.items = [];
-                cat.items.push({ text, status: 'not_started' });
+                const newTask = { text, status: 'not_started' };
+                if (dueDate) newTask.dueDate = dueDate;
+                cat.items.push(newTask);
                 await Storage.save();
                 render();
                 return true;
@@ -364,14 +411,29 @@ const TasksApp = (function () {
         const task = getTasks()[catIdx].items[taskIdx];
         Modal.open({
             title: '編輯任務',
-            html: `<div class="form-group"><label>任務內容</label><input type="text" id="ipt-task" value="${escapeHtml(task.text || '')}"></div>`,
+            html: `
+                <div class="form-group">
+                    <label>任務內容</label>
+                    <input type="text" id="ipt-task" value="${escapeHtml(task.text || '')}">
+                </div>
+                <div class="form-group">
+                    <label>截止日期 (選填)</label>
+                    <input type="date" id="ipt-task-due" value="${task.dueDate || ''}">
+                </div>
+            `,
             onConfirm: async () => {
                 const text = document.getElementById('ipt-task').value.trim();
                 if (!text) {
                     alert('內容為必填');
                     return false;
                 }
+                const dueDate = document.getElementById('ipt-task-due').value || null;
                 task.text = text;
+                if (dueDate) {
+                    task.dueDate = dueDate;
+                } else {
+                    delete task.dueDate;
+                }
                 await Storage.save();
                 render();
                 return true;
