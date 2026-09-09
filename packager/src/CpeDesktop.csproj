@@ -1,0 +1,66 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationTitle>CPE Tool</ApplicationTitle>
+    <AssemblyName>CPE_Tool</AssemblyName>
+    
+    <!-- 單檔發布設定 -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>false</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <NoWarn>$(NoWarn);MSB3277</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4129.50" />
+  </ItemGroup>
+
+  <!-- 在編譯前自動將前端網頁資源打包成 web.zip 嵌入 .exe -->
+  <Target Name="PrepareWebAssets" BeforeTargets="BeforeBuild;BeforeRebuild;CoreCompile">
+    <PropertyGroup>
+      <StagingDir>$(IntermediateOutputPath)web_staging\</StagingDir>
+      <ZipFile>$(IntermediateOutputPath)web.zip</ZipFile>
+      <ProjectRoot>$(ProjectDir)..\..\</ProjectRoot>
+    </PropertyGroup>
+    
+    <!-- 建立暫存區 -->
+    <RemoveDir Directories="$(StagingDir)" Condition="Exists('$(StagingDir)')" />
+    <MakeDir Directories="$(StagingDir)" />
+
+    <!-- 複製靜態檔案 -->
+    <ItemGroup>
+      <_HtmlFiles Include="$(ProjectRoot)*.html" />
+      <_CssFiles Include="$(ProjectRoot)css\**\*" />
+      <_JsFiles Include="$(ProjectRoot)js\**\*" />
+      <_LibFiles Include="$(ProjectRoot)lib\**\*" Condition="Exists('$(ProjectRoot)lib')" />
+      <_VendorFiles Include="$(ProjectRoot)vendor\**\*" Condition="Exists('$(ProjectRoot)vendor')" />
+      <_AssetFiles Include="$(ProjectRoot)assets\**\*" Condition="Exists('$(ProjectRoot)assets')" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_HtmlFiles)" DestinationFolder="$(StagingDir)" />
+    <Copy SourceFiles="@(_CssFiles)" DestinationFolder="$(StagingDir)css\%(RecursiveDir)" />
+    <Copy SourceFiles="@(_JsFiles)" DestinationFolder="$(StagingDir)js\%(RecursiveDir)" />
+    <Copy SourceFiles="@(_LibFiles)" DestinationFolder="$(StagingDir)lib\%(RecursiveDir)" Condition="Exists('$(ProjectRoot)lib')" />
+    <Copy SourceFiles="@(_VendorFiles)" DestinationFolder="$(StagingDir)vendor\%(RecursiveDir)" Condition="Exists('$(ProjectRoot)vendor')" />
+    <Copy SourceFiles="@(_AssetFiles)" DestinationFolder="$(StagingDir)assets\%(RecursiveDir)" Condition="Exists('$(ProjectRoot)assets')" />
+
+    <!-- 壓縮為 web.zip -->
+    <Delete Files="$(ZipFile)" Condition="Exists('$(ZipFile)')" />
+    <ZipDirectory SourceDirectory="$(StagingDir)" DestinationFile="$(ZipFile)" Overwrite="true" />
+
+    <!-- 動態加入 EmbeddedResource -->
+    <ItemGroup>
+      <EmbeddedResource Include="$(ZipFile)">
+        <LogicalName>web.zip</LogicalName>
+        <WithCulture>false</WithCulture>
+        <Type>Non-Resx</Type>
+      </EmbeddedResource>
+    </ItemGroup>
+  </Target>
+
+</Project>

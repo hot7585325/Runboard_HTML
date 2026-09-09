@@ -7,3 +7,10 @@ data.json
 .DS_Store
 Thumbs.db
 *.tmp
+
+# 打包工具與 C# 編譯產出
+packager/dist/
+packager/dist-standalone/
+packager/src/bin/
+packager/src/obj/
+
