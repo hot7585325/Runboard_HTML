@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RunBoard - 系統與網路資訊</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/storage.js"></script>
+    <script src="js/nav.js"></script>
+    <script src="js/modal.js"></script>
+</head>
+<body>
+    <div id="sidebar"></div>
+    <div class="main-content">
+        <!-- 未連線提示 (若尚未授權 data.json，作為頂部輕量通知列呈現) -->
+        <div id="no-data-msg" style="display: none; margin-bottom: 20px;" class="info-alert-banner">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 18px;">💡</span>
+                    <span style="font-size: 13.5px; color: var(--text-primary);">
+                        <strong>提醒：</strong>目前尚未連線 <code>data.json</code>。本機硬體與外網 IP 仍可即時正常檢測；若需使用其他存檔模組，請點擊右側授權。
+                    </span>
+                </div>
+                <button class="btn primary btn-small" onclick="Storage.selectFile()">📂 授權 data.json</button>
+            </div>
+        </div>
+
+        <!-- 內容呈現區 -->
+        <div id="app-container" style="max-width: 1080px;">
+            <!-- 頂部頁面標頭 -->
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">🖥️ 系統與網路資訊</h2>
+                    <p style="color: var(--text-secondary); font-size: 14px; margin-top: 6px;">
+                        即時外網 IP 查詢、網路連線診斷、硬體規格與瀏覽器執行環境總覽
+                    </p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button class="btn btn-small" onclick="SysInfoApp.copyReport()" title="複製完整系統診斷報告為 Markdown 格式">📋 複製診斷報告</button>
+                    <button class="btn primary btn-small" onclick="SysInfoApp.refreshAll(true)" id="btn-refresh">🔄 重新整理</button>
+                </div>
+            </div>
+
+            <!-- 外網 IP 核心 Hero 卡片 -->
+            <div class="sysinfo-hero">
+                <div class="sysinfo-hero-main">
+                    <div class="sysinfo-hero-label">
+                        <span class="sysinfo-pulse"></span>
+                        <span>網際網路對外 IP (Public IPv4)</span>
+                    </div>
+                    <div class="sysinfo-ip-display">
+                        <span id="hero-ip" class="sysinfo-ip-text">正在查詢中...</span>
+                        <button class="btn btn-small" onclick="SysInfoApp.copyIp()" id="btn-copy-ip" style="margin: 0; padding: 4px 10px;">📋 複製 IP</button>
+                    </div>
+                    <div class="sysinfo-hero-sub">
+                        <span id="hero-isp">電信商：偵測中...</span>
+                        <span>•</span>
+                        <span id="hero-location">地區：偵測中...</span>
+                        <span>•</span>
+                        <span id="hero-ping-badge" class="sysinfo-badge info">延遲測量中...</span>
+                    </div>
+                </div>
+                <div class="sysinfo-hero-actions">
+                    <div style="text-align: right; font-size: 12px; color: var(--text-secondary);">
+                        <div>即時偵測時間</div>
+                        <div id="hero-last-update" style="font-family: Consolas, monospace; color: #cbd5e1; margin-top: 4px;">--:--:--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 資訊面板卡片網格 -->
+            <div class="sysinfo-grid">
+                <!-- 卡片 1: 網路與對外連線 -->
+                <div class="sysinfo-card">
+                    <div class="sysinfo-card-header">
+                        <div class="sysinfo-card-title">🌐 網際網路與地理位置</div>
+                        <span class="sysinfo-badge success" id="net-online-status">🟢 已連線</span>
+                    </div>
+                    <div class="sysinfo-card-body">
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">實體公網 IP</span>
+                            <span class="sysinfo-item-value code-font" id="val-ip">載入中...</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">網路服務商 (ISP)</span>
+                            <span class="sysinfo-item-value" id="val-isp">--</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">自治系統 (ASN) / 組織</span>
+                            <span class="sysinfo-item-value code-font" id="val-asn">--</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">國家與城市</span>
+                            <span class="sysinfo-item-value" id="val-location">--</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">時區設定</span>
+                            <span class="sysinfo-item-value" id="val-timezone">--</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">經緯度座標</span>
+                            <span class="sysinfo-item-value code-font" id="val-coords">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 卡片 2: 區域網路與品質診斷 -->
+                <div class="sysinfo-card">
+                    <div class="sysinfo-card-header">
+                        <div class="sysinfo-card-title">📶 內網與連線品質診斷</div>
+                        <span class="sysinfo-badge info" id="val-ping-summary">Ping: 測量中</span>
+                    </div>
+                    <div class="sysinfo-card-body">
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">連線回應延遲 (RTT)</span>
+                            <span class="sysinfo-item-value code-font" id="val-latency">測量中...</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">區域網路 (WebRTC 探測)</span>
+                            <span class="sysinfo-item-value code-font" id="val-lan-ip">探測中...</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">網路連線類型 (估計)</span>
+                            <span class="sysinfo-item-value" id="val-net-type">4G / Wi-Fi / 乙太網</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">估計下行頻寬</span>
+                            <span class="sysinfo-item-value" id="val-downlink">--</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">協議與沙盒環境</span>
+                            <span class="sysinfo-item-value code-font" id="val-protocol">file:/// (本機協定)</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">省流量模式 (Save-Data)</span>
+                            <span class="sysinfo-item-value" id="val-save-data">未啟用</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 卡片 3: 電腦硬體與規格 -->
+                <div class="sysinfo-card">
+                    <div class="sysinfo-card-header">
+                        <div class="sysinfo-card-title">💻 電腦硬體與運算效能</div>
+                        <span class="sysinfo-badge info" id="val-cpu-badge">運算單元</span>
+                    </div>
+                    <div class="sysinfo-card-body">
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">CPU 處理器邏輯核心數</span>
+                            <span class="sysinfo-item-value code-font" id="val-cpu-cores">-- 核心</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">系統裝置記憶體 (估算)</span>
+                            <span class="sysinfo-item-value code-font" id="val-memory">-- GB</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">顯示卡 (GPU 渲染器)</span>
+                            <span class="sysinfo-item-value" id="val-gpu" style="font-size: 12px;">偵測中...</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">WebGL 硬體圖形加速</span>
+                            <span class="sysinfo-item-value" id="val-webgl">支援 WebGL 2.0</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">電池與電源狀態</span>
+                            <span class="sysinfo-item-value" id="val-battery">偵測中...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 卡片 4: 螢幕與顯示規格 -->
+                <div class="sysinfo-card">
+                    <div class="sysinfo-card-header">
+                        <div class="sysinfo-card-title">🖥️ 螢幕與顯示規格</div>
+                        <span class="sysinfo-badge info" id="val-screen-ratio">縮放比</span>
+                    </div>
+                    <div class="sysinfo-card-body">
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">實體螢幕解析度</span>
+                            <span class="sysinfo-item-value code-font" id="val-screen-res">-- × --</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">可用工作區解析度</span>
+                            <span class="sysinfo-item-value code-font" id="val-avail-res">-- × --</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">目前視窗尺寸</span>
+                            <span class="sysinfo-item-value code-font" id="val-window-size">-- × --</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">螢幕縮放比率 (DPI)</span>
+                            <span class="sysinfo-item-value" id="val-pixel-ratio">100% (1.0x)</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">色彩深度 (Color Depth)</span>
+                            <span class="sysinfo-item-value" id="val-color-depth">24-bit</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 卡片 5: 作業系統與執行環境 -->
+                <div class="sysinfo-card">
+                    <div class="sysinfo-card-header">
+                        <div class="sysinfo-card-title">⚙️ 作業系統與環境</div>
+                        <span class="sysinfo-badge info" id="val-os-badge">OS</span>
+                    </div>
+                    <div class="sysinfo-card-body">
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">作業系統平台</span>
+                            <span class="sysinfo-item-value" id="val-os">偵測中...</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">系統架構 / 位元</span>
+                            <span class="sysinfo-item-value code-font" id="val-arch">64-bit</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">瀏覽器核心與版本</span>
+                            <span class="sysinfo-item-value" id="val-browser">偵測中...</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">偏好系統語系</span>
+                            <span class="sysinfo-item-value" id="val-language">--</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">色彩偏好模式</span>
+                            <span class="sysinfo-item-value" id="val-theme-pref">暗黑模式 (Dark)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 卡片 6: 本機時間與記憶體效能 -->
+                <div class="sysinfo-card">
+                    <div class="sysinfo-card-header">
+                        <div class="sysinfo-card-title">⏱️ 本機時鐘與快取效能</div>
+                        <span class="sysinfo-badge success">運作良好</span>
+                    </div>
+                    <div class="sysinfo-card-body">
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">本機即時時間</span>
+                            <span class="sysinfo-item-value code-font" id="val-local-clock">--:--:--</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">本機時區識別</span>
+                            <span class="sysinfo-item-value" id="val-local-timezone">Asia/Taipei</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">JS 記憶體堆疊使用</span>
+                            <span class="sysinfo-item-value code-font" id="val-js-heap">-- MB</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">頁面載入耗時 (DOM)</span>
+                            <span class="sysinfo-item-value code-font" id="val-load-time">-- ms</span>
+                        </div>
+                        <div class="sysinfo-item">
+                            <span class="sysinfo-item-label">IndexedDB 授權快取</span>
+                            <span class="sysinfo-item-value" id="val-storage-cache">偵測中...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部專屬腳本 -->
+    <script src="js/sysinfo.js"></script>
+</body>
+</html>

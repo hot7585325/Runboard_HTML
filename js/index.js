@@ -74,6 +74,13 @@ const DashboardApp = (function () {
                 statGraphEl.innerText = `尚未載入快照 · 點擊掃描`;
             }
         }
+
+        // 系統資訊卡片摘要
+        const statSysEl = document.getElementById('stat-sysinfo');
+        if (statSysEl) {
+            const cores = navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency} 核心` : '硬體偵測';
+            statSysEl.innerText = `${navigator.onLine ? '🟢 網路正常' : '🔴 離線'} · ${cores} · 點擊查看完整報告`;
+        }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
