@@ -144,13 +144,92 @@ body {
     align-items: center;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 15px;
-    margin-bottom: 30px;
+    margin-bottom: 25px;
 }
 
 .section-title {
     font-size: 28px;
     font-weight: 600;
     color: white;
+}
+
+/* ================= 工具列與搜尋區 (Toolbar & Search) ================= */
+.toolbar-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.search-bar {
+    position: relative;
+    flex: 1;
+    min-width: 220px;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    pointer-events: none;
+    user-select: none;
+}
+
+.search-input {
+    width: 100%;
+    background-color: var(--sidebar-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 9px 14px 9px 36px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.search-input:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+    background-color: #222222;
+}
+
+.search-input::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.65;
+}
+
+.btn-filter {
+    background-color: var(--sidebar-bg);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    padding: 8px 14px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+    height: 38px;
+    white-space: nowrap;
+}
+
+.btn-filter:hover {
+    background-color: var(--hover-bg);
+    color: var(--text-primary);
+    border-color: #444;
+}
+
+.btn-filter.active {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border-color: var(--accent-color);
+    font-weight: 500;
 }
 
 /* ================= 分類與卡片 (Categories & Cards) ================= */
@@ -206,6 +285,28 @@ body {
     font-size: 18px;
     color: var(--text-secondary);
     font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.task-progress-badge {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background-color: var(--hover-bg);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.task-progress-badge.all-done {
+    background-color: rgba(74, 222, 128, 0.15);
+    color: var(--success-color);
+    border-color: rgba(74, 222, 128, 0.3);
 }
 
 .list-container {
@@ -245,9 +346,33 @@ body {
     transform: scale(0.98);
 }
 
+.item-card.drag-target-over,
+.task-item.drag-target-over,
+.note-card.drag-target-over {
+    border-color: var(--accent-color) !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4) !important;
+    transform: scale(1.01);
+}
+
 .item-card:active,
 .task-item:active {
     cursor: grabbing;
+}
+
+.item-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 48px;
+}
+
+.fav-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    vertical-align: middle;
+    flex-shrink: 0;
+    object-fit: contain;
 }
 
 .item-title {
@@ -255,6 +380,13 @@ body {
     font-weight: 500;
     font-size: 16px;
     margin-right: 20px;
+}
+
+.item-card-header .item-title {
+    margin-right: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .item-desc {
@@ -272,7 +404,11 @@ body {
     color: var(--text-secondary);
     cursor: pointer;
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: opacity 0.2s, color 0.2s;
+    font-size: 13px;
+    line-height: 1;
+    padding: 3px;
+    border-radius: 4px;
 }
 
 .delete-btn {
@@ -280,7 +416,7 @@ body {
 }
 
 .edit-btn {
-    right: 35px;
+    right: 32px;
 }
 
 .item-card:hover .delete-btn,
@@ -337,6 +473,19 @@ body {
 
 .note-card .edit-btn:hover {
     color: #2563eb;
+}
+
+.note-card .note-link {
+    color: #1d4ed8;
+    text-decoration: underline;
+    word-break: break-all;
+    transition: color 0.2s;
+    font-weight: 500;
+}
+
+.note-card .note-link:hover {
+    color: #1e40af;
+    text-decoration: underline;
 }
 
 .note-card::-webkit-scrollbar {
@@ -454,7 +603,17 @@ body {
     display: flex;
     align-items: center;
     gap: 15px;
-    padding-right: 25px;
+    padding-right: 55px;
+}
+
+.pwd-card .delete-btn {
+    top: 14px;
+    right: 14px;
+}
+
+.pwd-card .edit-btn {
+    top: 14px;
+    right: 38px;
 }
 
 .pwd-mask {

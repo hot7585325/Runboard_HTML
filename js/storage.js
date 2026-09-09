@@ -152,6 +152,30 @@ const Storage = (function () {
         }
     }
 
+    // 匯出資料備份檔 (JSON)
+    function exportBackup() {
+        try {
+            const pad = (n) => String(n).padStart(2, '0');
+            const now = new Date();
+            const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+            const filename = `runboard_backup_${timestamp}.json`;
+
+            const jsonString = JSON.stringify(data, null, 4);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            console.error('匯出備份失敗:', e);
+            alert('匯出備份失敗: ' + (e.message || e));
+        }
+    }
+
     // 更新側邊欄與頁面的連線狀態 UI
     function updateUIStatus() {
         const statusContainer = document.getElementById('file-status-area');
@@ -163,6 +187,7 @@ const Storage = (function () {
                     <span style="color: var(--success-color); font-weight: bold;">🟢 已連線 data.json</span><br>
                     修改將自動寫入檔案
                 </div>
+                <button class="btn btn-small" style="font-size: 11px; width: 100%; margin-bottom: 6px; color: var(--text-muted);" onclick="Storage.exportBackup()">📥 匯出備份檔</button>
                 <button class="btn btn-small" style="font-size: 11px; width: 100%; color: var(--text-muted);" onclick="Storage.selectFile()">切換資料檔</button>
             `;
             const noDataMsg = document.getElementById('no-data-msg');
@@ -227,6 +252,7 @@ const Storage = (function () {
         selectFile,
         requestHandlePermission,
         updateUIStatus,
+        exportBackup,
         get isConnected() { return isConnected; }
     };
 })();

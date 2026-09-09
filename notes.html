@@ -24,6 +24,12 @@
                 <h2 class="section-title">📝 便條紙</h2>
                 <button class="btn btn-small" onclick="NotesApp.openAddCategory()">＋新增分類</button>
             </div>
+            <div class="toolbar-container">
+                <div class="search-bar">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="note-search" class="search-input" placeholder="搜尋便條紙內容..." oninput="NotesApp.handleSearch(this.value)">
+                </div>
+            </div>
             <div id="notes-list"></div>
         </div>
     </div>

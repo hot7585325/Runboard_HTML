@@ -24,6 +24,15 @@
                 <h2 class="section-title">📋 任務清單</h2>
                 <button class="btn btn-small" onclick="TasksApp.openAddCategory()">＋新增分類</button>
             </div>
+            <div class="toolbar-container">
+                <div class="search-bar">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="task-search" class="search-input" placeholder="搜尋任務內容..." oninput="TasksApp.handleSearch(this.value)">
+                </div>
+                <button type="button" class="btn-filter" id="btn-toggle-done" onclick="TasksApp.toggleHideDone()">
+                    <span>👁️</span> <span id="lbl-toggle-done">隱藏已完成</span>
+                </button>
+            </div>
             <div id="tasks-list"></div>
         </div>
     </div>

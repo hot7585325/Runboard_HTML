@@ -24,6 +24,12 @@
                 <h2 class="section-title">🔖 常用網站</h2>
                 <button class="btn btn-small" onclick="FavoritesApp.openAddCategory()">＋新增分類</button>
             </div>
+            <div class="toolbar-container">
+                <div class="search-bar">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="fav-search" class="search-input" placeholder="搜尋常用網站 (名稱、網址、說明)..." oninput="FavoritesApp.handleSearch(this.value)">
+                </div>
+            </div>
             <div id="favorites-list"></div>
         </div>
     </div>
