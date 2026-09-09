@@ -64,6 +64,16 @@ const DashboardApp = (function () {
         let pwdCount = data.passwords ? data.passwords.length : 0;
         const statPwdEl = document.getElementById('stat-passwords');
         if (statPwdEl) statPwdEl.innerText = `共儲存 ${pwdCount} 組帳號密碼`;
+
+        // 目錄節點圖統計
+        const statGraphEl = document.getElementById('stat-foldergraph');
+        if (statGraphEl) {
+            if (data.folderGraphSnapshot && data.folderGraphSnapshot.rootName) {
+                statGraphEl.innerText = `快照：${data.folderGraphSnapshot.rootName}`;
+            } else {
+                statGraphEl.innerText = `尚未載入快照 · 點擊掃描`;
+            }
+        }
     }
 
     document.addEventListener('DOMContentLoaded', () => {

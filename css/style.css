@@ -502,6 +502,68 @@ body {
     border-radius: 4px;
 }
 
+/* 深色便簽文字與控制項自動反色 */
+.note-card.dark-theme .item-title {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.note-card.dark-theme .delete-btn,
+.note-card.dark-theme .edit-btn {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.note-card.dark-theme .note-link {
+    color: #93c5fd;
+}
+
+/* 便條紙行內就地編輯 (Inline Editor) */
+.inline-note-editor {
+    width: 100%;
+    min-height: 100px;
+    background: rgba(255, 255, 255, 0.4);
+    color: rgba(0, 0, 0, 0.88);
+    border: 1px dashed rgba(0, 0, 0, 0.35);
+    border-radius: 6px;
+    padding: 8px;
+    font-family: inherit;
+    font-size: 15px;
+    line-height: 1.6;
+    outline: none;
+    resize: vertical;
+    box-sizing: border-box;
+    display: block;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.note-card.dark-theme .inline-note-editor {
+    background: rgba(0, 0, 0, 0.35);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.inline-note-editor:focus {
+    background: rgba(255, 255, 255, 0.65);
+    border-color: rgba(0, 0, 0, 0.6);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
+}
+
+.note-card.dark-theme .inline-note-editor:focus {
+    background: rgba(0, 0, 0, 0.5);
+    border-color: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+}
+
+.inline-editor-tips {
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.55);
+    margin-top: 6px;
+    user-select: none;
+}
+
+.note-card.dark-theme .inline-editor-tips {
+    color: rgba(255, 255, 255, 0.55);
+}
+
 /* ================= 任務清單區 (Tasks) ================= */
 .task-list {
     display: flex;

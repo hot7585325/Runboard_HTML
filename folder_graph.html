@@ -1,0 +1,95 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RunBoard - 目錄節點圖</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/storage.js"></script>
+    <script src="js/nav.js"></script>
+    <script src="js/modal.js"></script>
+</head>
+<body>
+    <div id="sidebar"></div>
+    <div class="main-content folder-graph-page">
+        <!-- 未連線提示 (遵循 GEMINI.md 規範) -->
+        <div id="no-data-msg" style="text-align: center; padding-top: 100px;">
+            <h2 style="color: var(--text-secondary); margin-bottom: 15px;">請先點擊左下角「選擇 data.json」按鈕</h2>
+            <p style="color: #666;">授權後即可在此網頁啟用目錄節點圖，並可保存掃描快照紀錄。</p>
+        </div>
+
+        <!-- 內容呈現區 -->
+        <div id="app-container" style="display: none; width: 100%; height: 100%; position: relative;">
+            <div class="graph-view-wrapper" id="graph-view-wrapper">
+                <!-- 浮動控制工具列 -->
+                <div class="graph-toolbar">
+                    <div class="graph-toolbar-group">
+                        <button type="button" class="graph-toolbar-btn primary" id="btn-scan-dir" onclick="FolderGraphApp.scanDirectory()">
+                            <span>📁</span> <span>選取目錄掃描</span>
+                        </button>
+                        <button type="button" class="graph-toolbar-btn" id="btn-auto-layout" onclick="FolderGraphApp.autoLayout()">
+                            <span>📐</span> <span>自動排版</span>
+                        </button>
+                        <button type="button" class="graph-toolbar-btn" id="btn-reset-view" onclick="FolderGraphApp.resetView()">
+                            <span>🔍</span> <span>重設視角 (1.0x)</span>
+                        </button>
+                    </div>
+
+                    <div class="graph-toolbar-group">
+                        <label for="select-max-depth" style="font-size: 12px; color: var(--text-secondary);">最大深度：</label>
+                        <select id="select-max-depth" onchange="FolderGraphApp.changeMaxDepth(this.value)">
+                            <option value="1">1 層 (根目錄)</option>
+                            <option value="2">2 層</option>
+                            <option value="3" selected>3 層</option>
+                            <option value="4">4 層</option>
+                            <option value="5">5 層</option>
+                            <option value="6">6 層</option>
+                            <option value="99">全部 (無限制)</option>
+                        </select>
+                    </div>
+
+                    <div class="graph-toolbar-info">
+                        <div class="graph-status-badge" id="badge-root-name">
+                            <span>📂</span> <span id="lbl-root-name">未載入目錄</span>
+                        </div>
+                        <div class="graph-status-badge" id="badge-node-count">
+                            <span>🗂️</span> <span id="lbl-node-count">0 個節點</span>
+                        </div>
+                        <div class="graph-status-badge" id="badge-file-count">
+                            <span>📄</span> <span id="lbl-file-count">0 個檔案</span>
+                        </div>
+                        <div class="graph-status-badge" id="badge-zoom">
+                            <span>🔎</span> <span id="lbl-zoom">100%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 畫布底層互動區 (捕捉 Pan & Zoom) -->
+                <div class="graph-canvas" id="graph-canvas">
+                    <!-- 縮放與平移變形層 -->
+                    <div class="graph-transform-layer" id="graph-transform-layer">
+                        <!-- SVG 貝茲曲線層 -->
+                        <svg class="graph-svg-layer" id="graph-svg-layer">
+                            <defs>
+                                <linearGradient id="edge-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.8" />
+                                    <stop offset="100%" stop-color="#60a5fa" stop-opacity="0.8" />
+                                </linearGradient>
+                            </defs>
+                            <g id="svg-edges-group"></g>
+                        </svg>
+
+                        <!-- DOM 節點層 -->
+                        <div class="graph-nodes-layer" id="graph-nodes-layer"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 輕量 Toast 提示 -->
+    <div id="graph-toast" class="graph-toast"></div>
+
+    <script src="js/folder_graph.js"></script>
+</body>
+</html>

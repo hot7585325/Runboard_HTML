@@ -9,7 +9,8 @@
         { title: '🔖 常用網站', url: 'favorites.html' },
         { title: '📝 便條紙', url: 'notes.html' },
         { title: '📋 任務清單', url: 'tasks.html' },
-        { title: '🔒 密碼區', url: 'passwords.html' }
+        { title: '🔒 密碼區', url: 'passwords.html' },
+        { title: '🗂️ 目錄節點圖', url: 'folder_graph.html' }
     ];
 
     function renderSidebar() {

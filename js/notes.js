@@ -31,6 +31,18 @@ const NotesApp = (function () {
         });
     }
 
+    function isDarkColor(hexColor) {
+        if (!hexColor) return false;
+        let c = hexColor.replace('#', '');
+        if (c.length === 3) c = c.split('').map(x => x + x).join('');
+        if (c.length !== 6) return false;
+        const r = parseInt(c.substring(0, 2), 16) || 0;
+        const g = parseInt(c.substring(2, 4), 16) || 0;
+        const b = parseInt(c.substring(4, 6), 16) || 0;
+        const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+        return yiq < 130;
+    }
+
     function handleSearch(keyword) {
         searchKeyword = (keyword || '').trim().toLowerCase();
         render();
@@ -90,17 +102,20 @@ const NotesApp = (function () {
                 const bgColor = item.color || '#fde047';
                 const w = item.width ? `width: ${item.width};` : '';
                 const h = item.height ? `height: ${item.height};` : '';
+                const darkClass = isDarkColor(bgColor) ? 'dark-theme' : '';
 
                 html += `
-                <div class="item-card note-card" style="background-color: ${bgColor}; ${w} ${h}" draggable="true"
+                <div class="item-card note-card ${darkClass}" style="background-color: ${bgColor}; ${w} ${h}" draggable="true"
                     ondragstart="NotesApp.handleDragStart(event, ${catIdx}, ${itemIdx})"
                     ondragend="NotesApp.handleDragEnd(event)"
                     ondragover="NotesApp.handleItemDragOver(event)"
                     ondragleave="NotesApp.handleItemDragLeave(event)"
                     ondrop="NotesApp.handleItemDrop(event, ${catIdx}, ${itemIdx})"
-                    data-cat-idx="${catIdx}" data-item-idx="${itemIdx}">
-                    <button class="edit-btn" onclick="NotesApp.openEditNote(${catIdx}, ${itemIdx})">✏️</button>
-                    <button class="delete-btn" onclick="NotesApp.deleteNote(${catIdx}, ${itemIdx})">✕</button>
+                    ondblclick="NotesApp.enableInlineEdit(event, ${catIdx}, ${itemIdx})"
+                    data-cat-idx="${catIdx}" data-item-idx="${itemIdx}"
+                    title="連點兩下直接編輯內容">
+                    <button class="edit-btn" onclick="NotesApp.openEditNote(${catIdx}, ${itemIdx})" title="完整編輯視窗">✏️</button>
+                    <button class="delete-btn" onclick="NotesApp.deleteNote(${catIdx}, ${itemIdx})" title="刪除便條">✕</button>
                     <div class="item-title">${formatNoteContent(item.content || '')}</div>
                 </div>
                 `;
@@ -377,6 +392,92 @@ const NotesApp = (function () {
         render();
     }
 
+    // 雙擊行內直接編輯 (Inline Editing)
+    function enableInlineEdit(event, catIdx, itemIdx) {
+        // 避開超連結與按鈕點擊
+        if (event.target.closest('a') || event.target.closest('button')) return;
+
+        const card = event.currentTarget;
+        if (card.querySelector('.inline-note-editor')) return; // 避免重複開啟
+
+        const note = getNotes()[catIdx]?.items?.[itemIdx];
+        if (!note) return;
+
+        const originalContent = note.content || '';
+        const titleEl = card.querySelector('.item-title');
+        if (!titleEl) return;
+
+        // 進入編輯時暫時關閉卡片拖曳，避免選取文字觸發拖曳
+        card.setAttribute('draggable', 'false');
+
+        titleEl.innerHTML = `
+            <textarea class="inline-note-editor" placeholder="輸入便條紙內容...">${escapeHtml(originalContent)}</textarea>
+            <div class="inline-editor-tips">Ctrl+Enter 儲存 · Esc 取消 · 點擊外部自動儲存</div>
+        `;
+
+        const textarea = titleEl.querySelector('.inline-note-editor');
+        if (!textarea) return;
+
+        // 聚焦並將游標移至文字末端
+        textarea.focus();
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+        // 動態根據內容適配高度
+        const autoAdjustHeight = () => {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.max(100, textarea.scrollHeight) + 'px';
+        };
+        autoAdjustHeight();
+        textarea.addEventListener('input', autoAdjustHeight);
+
+        // 阻擋輸入框內事件冒泡至外層卡片
+        textarea.addEventListener('mousedown', (e) => e.stopPropagation());
+        textarea.addEventListener('mouseup', (e) => e.stopPropagation());
+        textarea.addEventListener('click', (e) => e.stopPropagation());
+        textarea.addEventListener('dblclick', (e) => e.stopPropagation());
+
+        let isExited = false;
+
+        async function saveAndClose() {
+            if (isExited) return;
+            isExited = true;
+            const newContent = textarea.value.trim();
+            if (!newContent) {
+                // 若內容全被清空，還原原有內容，避免誤刪
+                note.content = originalContent;
+            } else if (newContent !== originalContent) {
+                note.content = newContent;
+                await Storage.save();
+            }
+            render();
+        }
+
+        function cancelAndClose() {
+            if (isExited) return;
+            isExited = true;
+            render();
+        }
+
+        // 鍵盤操作監聽
+        textarea.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelAndClose();
+            } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                saveAndClose();
+            }
+        });
+
+        // 失焦自動儲存
+        textarea.addEventListener('blur', () => {
+            setTimeout(() => {
+                saveAndClose();
+            }, 120);
+        });
+    }
+
     // 監聽拖拉卡片大小改變
     document.addEventListener('mouseup', async (e) => {
         const card = e.target.closest('.note-card');
@@ -424,7 +525,8 @@ const NotesApp = (function () {
         deleteCategory,
         openAddNote,
         openEditNote,
-        deleteNote
+        deleteNote,
+        enableInlineEdit
     };
 })();
 
