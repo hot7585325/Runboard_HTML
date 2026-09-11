@@ -1,4 +1,4 @@
-﻿/* ================= 現代柔和暗色系主題與全域樣式 ================= */
+/* ================= 現代柔和暗色系主題與全域樣式 ================= */
 :root {
     --bg-color: #191919;
     --sidebar-bg: #202020;
@@ -43,12 +43,35 @@ body {
     height: 100%;
 }
 
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px 15px 15px;
+}
+
 .sidebar-title {
     font-size: 14px;
     font-weight: 600;
     color: var(--text-secondary);
-    padding: 0 15px 15px 15px;
     letter-spacing: 1px;
+}
+
+.btn-reset-nav {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    transition: color 0.2s ease, background-color 0.2s ease;
+    display: none;
+}
+
+.btn-reset-nav:hover {
+    color: var(--text-primary);
+    background-color: var(--hover-bg);
 }
 
 .nav-links {
@@ -58,17 +81,89 @@ body {
     gap: 4px;
 }
 
-.nav-links li a {
-    padding: 10px 15px;
+.nav-links li {
+    position: relative;
+    user-select: none;
+    transition: transform 0.15s ease, opacity 0.15s ease;
     border-radius: var(--radius-md);
-    cursor: pointer;
+}
+
+.nav-links li.dragging {
+    opacity: 0.35;
+    background-color: var(--hover-bg);
+}
+
+.nav-links li.drag-over-top::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: 8px;
+    right: 8px;
+    height: 3px;
+    background-color: var(--accent-color);
+    border-radius: 2px;
+    box-shadow: 0 0 6px var(--accent-color);
+    pointer-events: none;
+    z-index: 10;
+}
+
+.nav-links li.drag-over-bottom::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 8px;
+    right: 8px;
+    height: 3px;
+    background-color: var(--accent-color);
+    border-radius: 2px;
+    box-shadow: 0 0 6px var(--accent-color);
+    pointer-events: none;
+    z-index: 10;
+}
+
+.nav-links li a {
+    padding: 10px 12px 10px 15px;
+    border-radius: var(--radius-md);
+    cursor: grab;
     color: var(--text-primary);
     transition: background 0.2s ease, color 0.2s ease;
     font-size: 15px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     text-decoration: none;
+}
+
+.nav-links li a:active {
+    cursor: grabbing;
+}
+
+.nav-links li a .nav-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nav-links li .drag-handle {
+    color: var(--text-secondary);
+    opacity: 0;
+    font-size: 13px;
+    letter-spacing: -1px;
+    margin-left: auto;
+    transition: opacity 0.15s ease;
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    user-select: none;
+}
+
+.nav-links li:hover .drag-handle {
+    opacity: 0.6;
+}
+
+.nav-links li .drag-handle:hover {
+    opacity: 1;
 }
 
 .nav-links li a:hover {
