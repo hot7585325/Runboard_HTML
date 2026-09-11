@@ -4,11 +4,12 @@
     let currentExt = '';
     let editor = null; // CodeMirror instance
     let tabulatorTable = null; // Tabulator instance
+    let jsonEditor = null; // JSONEditor instance
     
-    // For filtering & storage
+    // Mode toggles
+    let isCsvTableView = true; // CSV: Table vs Raw CodeMirror
+    let isJsonTreeView = true; // JSON: Tree vs Raw CodeMirror
     let rawTextLines = [];
-    let isCsvTableView = true; // For CSV: table vs raw CodeMirror
-    let isPreviewMode = false; // For Markdown
 
     // --- DOM Elements ---
     const ui = {
@@ -16,16 +17,28 @@
         noDataMsg: document.getElementById('no-data-msg'),
         fileName: document.getElementById('file-name-display'),
         btnSave: document.getElementById('btn-save'),
-        btnTogglePreview: document.getElementById('btn-toggle-preview'),
         btnToggleCsvRaw: document.getElementById('btn-toggle-csv-raw'),
+        btnToggleJsonRaw: document.getElementById('btn-toggle-json-raw'),
+        btnOpenSearch: document.getElementById('btn-open-search'),
+        btnCloseSearch: document.getElementById('btn-close-search'),
+        searchDrawer: document.getElementById('search-drawer'),
+        searchInput: document.getElementById('search-input'),
+        filterResults: document.getElementById('filter-results'),
+        filterStats: document.getElementById('filter-stats'),
+        
+        // Panels
+        singleEditorContainer: document.getElementById('single-editor-container'),
         editorContainer: document.getElementById('editor-container'),
-        previewContainer: document.getElementById('preview-container'),
+        splitContainer: document.getElementById('split-container'),
+        splitLeft: document.getElementById('split-left'),
+        splitResizer: document.getElementById('split-resizer'),
+        splitRight: document.getElementById('split-right'),
+        mdEditorContainer: document.getElementById('md-editor-container'),
+        mdPreviewPaper: document.getElementById('md-preview-paper'),
         wordContainer: document.getElementById('word-container'),
         wordPaper: document.getElementById('word-paper'),
         gridContainer: document.getElementById('grid-container'),
-        searchInput: document.getElementById('search-input'),
-        filterResults: document.getElementById('filter-results'),
-        filterStats: document.getElementById('filter-stats')
+        jsonTreeContainer: document.getElementById('json-tree-container')
     };
 
     // --- Core File Picker ---
@@ -57,77 +70,152 @@
         }
     }
 
+    // --- Route by Extension ---
     async function routeFile(file) {
-        // Reset Views
-        ui.editorContainer.style.display = 'none';
-        ui.previewContainer.style.display = 'none';
+        // Hide all view panels
+        ui.singleEditorContainer.style.display = 'none';
+        ui.splitContainer.style.display = 'none';
         ui.wordContainer.style.display = 'none';
         ui.gridContainer.style.display = 'none';
+        ui.jsonTreeContainer.style.display = 'none';
+
+        // Reset Toolbar Buttons
         ui.btnSave.style.display = 'none';
-        ui.btnTogglePreview.style.display = 'none';
         ui.btnToggleCsvRaw.style.display = 'none';
+        ui.btnToggleJsonRaw.style.display = 'none';
         ui.searchInput.value = '';
         ui.filterResults.innerHTML = '';
-        ui.filterStats.textContent = '分析中...';
-        isPreviewMode = false;
+        ui.filterStats.textContent = '共 0 筆結果';
+
         isCsvTableView = true;
+        isJsonTreeView = true;
 
         if (tabulatorTable) {
             tabulatorTable.destroy();
             tabulatorTable = null;
         }
+        if (jsonEditor) {
+            jsonEditor.destroy();
+            jsonEditor = null;
+        }
 
-        if (['txt', 'md', 'json', 'js', 'html', 'css'].includes(currentExt)) {
-            await handleTextFile(file);
+        if (currentExt === 'md') {
+            await handleMarkdownFile(file);
+        } else if (currentExt === 'json') {
+            await handleJsonFile(file);
         } else if (currentExt === 'csv') {
             await handleCsvFile(file);
         } else if (currentExt === 'xlsx') {
             await handleExcelFile(file);
         } else if (currentExt === 'docx') {
             await handleWordFile(file);
+        } else if (['txt', 'js', 'html', 'css'].includes(currentExt)) {
+            await handleSingleTextFile(file);
         } else {
             alert('不支援的檔案格式預覽');
         }
     }
 
-    // --- 1. Text & Markdown Handler ---
-    async function handleTextFile(file) {
+    // --- 1. Markdown Handler (Draggable Split View) ---
+    async function handleMarkdownFile(file) {
         const text = await file.text();
         rawTextLines = text.split('\n');
-        
-        ui.editorContainer.style.display = 'block';
-        ui.btnSave.style.display = 'flex';
-        
-        if (currentExt === 'md') {
-            ui.btnTogglePreview.style.display = 'flex';
-            ui.btnTogglePreview.innerHTML = '👁️ 預覽 Markdown';
-        }
 
-        initCodeMirror(text, currentExt);
+        ui.splitContainer.style.display = 'flex';
+        ui.btnSave.style.display = 'flex';
+
+        initCodeMirror(ui.mdEditorContainer, text, 'md', (newVal) => {
+            ui.mdPreviewPaper.innerHTML = marked.parse(newVal);
+            rawTextLines = newVal.split('\n');
+            runFilter(ui.searchInput.value);
+        });
+
+        ui.mdPreviewPaper.innerHTML = marked.parse(text);
         runFilter('');
     }
 
-    // --- 2. CSV Handler (Table Grid with direct Edit & Raw toggle) ---
+    // --- 2. JSON Handler (Tree Editor by default) ---
+    async function handleJsonFile(file) {
+        const text = await file.text();
+        rawTextLines = text.split('\n');
+
+        ui.jsonTreeContainer.style.display = 'block';
+        ui.btnSave.style.display = 'flex';
+        ui.btnToggleJsonRaw.style.display = 'flex';
+        ui.btnToggleJsonRaw.innerHTML = '📝 切換原始碼';
+
+        try {
+            const jsonObj = JSON.parse(text);
+            initJSONEditor(jsonObj);
+        } catch (e) {
+            console.warn('JSON 語法有誤，降級切換至 CodeMirror 代碼模式:', e);
+            toggleJsonRawView();
+        }
+
+        initCodeMirror(ui.editorContainer, text, 'json', (newVal) => {
+            rawTextLines = newVal.split('\n');
+            runFilter(ui.searchInput.value);
+        });
+
+        runFilter('');
+    }
+
+    function initJSONEditor(initialData) {
+        ui.jsonTreeContainer.innerHTML = '';
+        const options = {
+            mode: 'tree',
+            modes: ['tree', 'view'],
+            onChangeText: function(jsonString) {
+                if (editor) {
+                    editor.setValue(jsonString);
+                    rawTextLines = jsonString.split('\n');
+                }
+            }
+        };
+        jsonEditor = new JSONEditor(ui.jsonTreeContainer, options, initialData);
+        jsonEditor.expandAll();
+    }
+
+    // --- 3. CSV Handler (Table Grid by default) ---
     async function handleCsvFile(file) {
         const text = await file.text();
         rawTextLines = text.split('\n');
-        
-        // Show Table View by default
+
         ui.gridContainer.style.display = 'block';
         ui.btnSave.style.display = 'flex';
         ui.btnToggleCsvRaw.style.display = 'flex';
         ui.btnToggleCsvRaw.innerHTML = '📝 切換原始碼';
 
-        initCodeMirror(text, 'csv');
-        renderCsvToTabulator(text, true); // true = editable
+        initCodeMirror(ui.editorContainer, text, 'csv', (newVal) => {
+            rawTextLines = newVal.split('\n');
+            runFilter(ui.searchInput.value);
+        });
+
+        renderCsvToTabulator(text, true);
         runFilter('');
     }
 
-    // --- 3. Excel Handler (Modern Tabulator Read-Only View) ---
+    // --- 4. Single Text / Code Handler ---
+    async function handleSingleTextFile(file) {
+        const text = await file.text();
+        rawTextLines = text.split('\n');
+
+        ui.singleEditorContainer.style.display = 'block';
+        ui.btnSave.style.display = 'flex';
+
+        initCodeMirror(ui.editorContainer, text, currentExt, (newVal) => {
+            rawTextLines = newVal.split('\n');
+            runFilter(ui.searchInput.value);
+        });
+
+        runFilter('');
+    }
+
+    // --- 5. Excel Handler (Modern Tabulator) ---
     async function handleExcelFile(file) {
         ui.gridContainer.style.display = 'block';
         const arrayBuffer = await file.arrayBuffer();
-        
+
         try {
             const workbook = XLSX.read(arrayBuffer, {type: 'array'});
             const firstSheetName = workbook.SheetNames[0];
@@ -139,7 +227,7 @@
                 return;
             }
 
-            renderArrayDataToTabulator(jsonData, false); // false = read-only
+            renderArrayDataToTabulator(jsonData, false);
             runFilter('');
         } catch (e) {
             console.error('Excel Parsing Error:', e);
@@ -147,15 +235,15 @@
         }
     }
 
-    // --- 4. Word Handler (A4 Paper View) ---
+    // --- 6. Word Handler (A4 Paper View) ---
     async function handleWordFile(file) {
         ui.wordContainer.style.display = 'flex';
         const arrayBuffer = await file.arrayBuffer();
-        
+
         try {
             const resultHtml = await mammoth.convertToHtml({arrayBuffer: arrayBuffer});
             ui.wordPaper.innerHTML = resultHtml.value || '<p style="color:#888;">(空白文件)</p>';
-            
+
             const resultText = await mammoth.extractRawText({arrayBuffer: arrayBuffer});
             rawTextLines = resultText.value.split('\n');
             runFilter('');
@@ -167,7 +255,6 @@
 
     // --- Tabulator Helpers ---
     function parseCsvToRows(csvText) {
-        // Robust CSV splitter considering quotes
         const lines = csvText.split(/\r?\n/).filter(line => line.trim().length > 0);
         return lines.map(line => {
             const row = [];
@@ -237,10 +324,7 @@
         const columns = tabulatorTable.getColumnDefinitions();
         const data = tabulatorTable.getData();
         
-        // Headers
         const headerRow = columns.map(col => `"${String(col.title).replace(/"/g, '""')}"`).join(',');
-        
-        // Rows
         const dataRows = data.map(row => {
             return columns.map(col => {
                 const val = row[col.field] !== undefined ? String(row[col.field]) : '';
@@ -255,34 +339,32 @@
         }
     }
 
-    // --- CodeMirror Editor Logic ---
-    function initCodeMirror(text, ext) {
-        if (!editor) {
-            editor = CodeMirror(ui.editorContainer, {
-                lineNumbers: true,
-                theme: 'monokai',
-                lineWrapping: true
-            });
-            
-            editor.on('change', () => {
-                if (['txt', 'md', 'json', 'js', 'html', 'css'].includes(currentExt)) {
-                    rawTextLines = editor.getValue().split('\n');
-                    runFilter(ui.searchInput.value);
-                }
-            });
-        }
-        
+    // --- CodeMirror Initializer ---
+    function initCodeMirror(mountNode, text, ext, onChangeCallback) {
+        mountNode.innerHTML = '';
         let mode = 'null';
         if (ext === 'md') mode = 'markdown';
         else if (ext === 'js' || ext === 'json') mode = 'javascript';
         else if (ext === 'html') mode = 'xml';
-        
-        editor.setOption('mode', mode);
-        editor.setValue(text);
+
+        editor = CodeMirror(mountNode, {
+            value: text,
+            mode: mode,
+            lineNumbers: true,
+            theme: 'monokai',
+            lineWrapping: true
+        });
+
+        editor.on('change', () => {
+            if (typeof onChangeCallback === 'function') {
+                onChangeCallback(editor.getValue());
+            }
+        });
+
         setTimeout(() => editor.refresh(), 50);
     }
 
-    // --- Save File ---
+    // --- Save File Handler ---
     async function saveFile() {
         if (!currentHandle) return;
         try {
@@ -290,6 +372,8 @@
             if (currentExt === 'csv' && isCsvTableView) {
                 syncTabulatorToCodeMirror();
                 contentToSave = editor.getValue();
+            } else if (currentExt === 'json' && isJsonTreeView && jsonEditor) {
+                contentToSave = JSON.stringify(jsonEditor.get(), null, 2);
             } else if (editor) {
                 contentToSave = editor.getValue();
             }
@@ -297,7 +381,7 @@
             const writable = await currentHandle.createWritable();
             await writable.write(contentToSave);
             await writable.close();
-            
+
             const origText = ui.btnSave.innerHTML;
             ui.btnSave.innerHTML = '✅ 已儲存';
             setTimeout(() => ui.btnSave.innerHTML = origText, 2000);
@@ -307,43 +391,103 @@
         }
     }
 
-    // --- View Toggles ---
-    function toggleMarkdownPreview() {
-        if (currentExt !== 'md') return;
-        isPreviewMode = !isPreviewMode;
-        if (isPreviewMode) {
-            ui.editorContainer.style.display = 'none';
-            ui.previewContainer.style.display = 'block';
-            ui.previewContainer.innerHTML = marked.parse(editor.getValue());
-            ui.btnTogglePreview.innerHTML = '✏️ 返回編輯';
-        } else {
-            ui.editorContainer.style.display = 'block';
-            ui.previewContainer.style.display = 'none';
-            ui.btnTogglePreview.innerHTML = '👁️ 預覽 Markdown';
-            editor.refresh();
-        }
-    }
-
+    // --- Toggle Functions ---
     function toggleCsvRawView() {
         if (currentExt !== 'csv') return;
         isCsvTableView = !isCsvTableView;
         if (isCsvTableView) {
-            // Re-render table from CodeMirror
-            ui.editorContainer.style.display = 'none';
+            ui.singleEditorContainer.style.display = 'none';
             ui.gridContainer.style.display = 'block';
             renderCsvToTabulator(editor.getValue(), true);
             ui.btnToggleCsvRaw.innerHTML = '📝 切換原始碼';
         } else {
-            // Show CodeMirror
             syncTabulatorToCodeMirror();
             ui.gridContainer.style.display = 'none';
-            ui.editorContainer.style.display = 'block';
+            ui.singleEditorContainer.style.display = 'block';
             editor.refresh();
             ui.btnToggleCsvRaw.innerHTML = '📊 切換表格視圖';
         }
     }
 
-    // --- Right Pane Filter Engine ---
+    function toggleJsonRawView() {
+        if (currentExt !== 'json') return;
+        isJsonTreeView = !isJsonTreeView;
+        if (isJsonTreeView) {
+            // Raw -> Tree
+            try {
+                const jsonObj = JSON.parse(editor.getValue());
+                ui.singleEditorContainer.style.display = 'none';
+                ui.jsonTreeContainer.style.display = 'block';
+                initJSONEditor(jsonObj);
+                ui.btnToggleJsonRaw.innerHTML = '📝 切換原始碼';
+            } catch (e) {
+                alert('目前代碼非有效 JSON，無法切換為樹狀視圖：' + e.message);
+                isJsonTreeView = false;
+            }
+        } else {
+            // Tree -> Raw
+            if (jsonEditor) {
+                const jsonString = JSON.stringify(jsonEditor.get(), null, 2);
+                editor.setValue(jsonString);
+            }
+            ui.jsonTreeContainer.style.display = 'none';
+            ui.singleEditorContainer.style.display = 'block';
+            editor.refresh();
+            ui.btnToggleJsonRaw.innerHTML = '🌳 切換樹狀視圖';
+        }
+    }
+
+    // --- Resizer Logic for Markdown Split View ---
+    let isResizing = false;
+    ui.splitResizer.addEventListener('mousedown', function(e) {
+        isResizing = true;
+        ui.splitResizer.classList.add('resizing');
+        document.body.style.cursor = 'col-resize';
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!isResizing) return;
+        const containerRect = ui.splitContainer.getBoundingClientRect();
+        let newLeftWidth = e.clientX - containerRect.left;
+        let percentage = (newLeftWidth / containerRect.width) * 100;
+        if (percentage < 15) percentage = 15;
+        if (percentage > 85) percentage = 85;
+        ui.splitLeft.style.width = percentage + '%';
+        if (editor) editor.refresh();
+    });
+
+    document.addEventListener('mouseup', function() {
+        if (isResizing) {
+            isResizing = false;
+            ui.splitResizer.classList.remove('resizing');
+            document.body.style.cursor = 'default';
+        }
+    });
+
+    // --- Search & Filter Drawer ---
+    function toggleSearchDrawer(open) {
+        if (open !== undefined) {
+            ui.searchDrawer.classList.toggle('open', open);
+        } else {
+            ui.searchDrawer.classList.toggle('open');
+        }
+        if (ui.searchDrawer.classList.contains('open')) {
+            ui.searchInput.focus();
+        }
+    }
+
+    ui.btnOpenSearch.addEventListener('click', () => toggleSearchDrawer(true));
+    ui.btnCloseSearch.addEventListener('click', () => toggleSearchDrawer(false));
+
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+            e.preventDefault();
+            toggleSearchDrawer(true);
+        } else if (e.key === 'Escape' && ui.searchDrawer.classList.contains('open')) {
+            toggleSearchDrawer(false);
+        }
+    });
+
     function runFilter(query) {
         ui.filterResults.innerHTML = '';
         if (!currentHandle) {
@@ -351,7 +495,7 @@
             return;
         }
 
-        // 1. If Tabulator Table is active (CSV or Excel), filter the Table directly!
+        // Table Mode filtering (CSV/Excel)
         if (tabulatorTable && ((currentExt === 'csv' && isCsvTableView) || currentExt === 'xlsx')) {
             if (!query) {
                 tabulatorTable.clearFilter();
@@ -363,11 +507,11 @@
                     return Object.values(data).some(val => String(val).toLowerCase().includes(q));
                 });
                 const count = tabulatorTable.getData("active").length;
-                ui.filterStats.textContent = `表格已過濾：符合 ${count} 列`;
+                ui.filterStats.textContent = `符合 ${count} 列資料`;
             }
         }
 
-        // 2. Populate Right Pane Results (for Text, MD, Docx, or CSV Raw)
+        // Text & Line-based filtering
         let regex = null;
         if (query) {
             try { regex = new RegExp(query, 'i'); } catch (e) { regex = null; }
@@ -380,13 +524,13 @@
             for (let i = 0; i < rawTextLines.length; i++) {
                 const line = rawTextLines[i];
                 if (!line.trim()) continue;
-                
+
                 const isMatch = !query || (regex ? regex.test(line) : line.toLowerCase().includes(query.toLowerCase()));
                 if (isMatch) {
                     matchCount++;
                     const div = document.createElement('div');
                     div.className = 'result-item';
-                    
+
                     let displayHtml = escapeHTML(line);
                     if (query) {
                         try {
@@ -396,9 +540,9 @@
                     }
 
                     div.innerHTML = `<span class="result-line-num">L${i + 1}</span>${displayHtml}`;
-                    
+
                     // Click to jump in CodeMirror
-                    if (editor && ui.editorContainer.style.display !== 'none') {
+                    if (editor) {
                         div.addEventListener('click', () => {
                             editor.setCursor({line: i, ch: 0});
                             editor.focus();
@@ -429,9 +573,9 @@
     document.getElementById('btn-initial-open').addEventListener('click', selectFile);
     document.getElementById('btn-open').addEventListener('click', selectFile);
     ui.btnSave.addEventListener('click', saveFile);
-    ui.btnTogglePreview.addEventListener('click', toggleMarkdownPreview);
     ui.btnToggleCsvRaw.addEventListener('click', toggleCsvRawView);
-    
+    ui.btnToggleJsonRaw.addEventListener('click', toggleJsonRawView);
+
     ui.searchInput.addEventListener('input', (e) => {
         runFilter(e.target.value);
     });

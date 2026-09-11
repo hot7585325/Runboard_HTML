@@ -19,6 +19,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.2/css/tabulator_midnight.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.2/js/tabulator.min.js"></script>
 
+    <!-- JSONEditor (Tree Visualizer & Editor) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.4/jsoneditor.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.4/jsoneditor.min.js"></script>
+
     <!-- Marked.js (Markdown Preview) -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
@@ -43,37 +47,59 @@
 
         <div id="app-container" style="display: none; height: 100%;">
             <div class="smart-editor-container">
-                <!-- 左側主畫面 -->
-                <div class="left-pane">
-                    <div class="toolbar">
-                        <button id="btn-open" class="btn-tool">📂 開啟檔案</button>
-                        <button id="btn-save" class="btn-tool primary" style="display: none;">💾 儲存修改</button>
-                        <button id="btn-toggle-preview" class="btn-tool" style="display: none;">👁️ 切換預覽</button>
-                        <button id="btn-toggle-csv-raw" class="btn-tool" style="display: none;">🔄 切換原始碼/表格</button>
-                        <span id="file-name-display" class="file-name"></span>
-                    </div>
-                    <div class="content-area">
-                        <!-- CodeMirror 容器 (純文字 / 原始碼) -->
-                        <div id="editor-container"></div>
-                        <!-- Markdown 預覽容器 -->
-                        <div id="preview-container"></div>
-                        <!-- Word 專屬 A4 紙張預覽容器 -->
-                        <div id="word-container" class="doc-viewport" style="display: none;">
-                            <div id="word-paper" class="doc-paper"></div>
-                        </div>
-                        <!-- Tabulator 表格容器 (CSV & Excel) -->
-                        <div id="grid-container" style="display: none; height: 100%;"></div>
-                    </div>
+                <!-- 頂部工具列 -->
+                <div class="toolbar">
+                    <button id="btn-open" class="btn-tool">📂 開啟檔案</button>
+                    <button id="btn-save" class="btn-tool primary" style="display: none;">💾 儲存修改</button>
+                    <button id="btn-toggle-preview" class="btn-tool" style="display: none;">👁️ 切換預覽</button>
+                    <button id="btn-toggle-csv-raw" class="btn-tool" style="display: none;">🔄 切換原始碼/表格</button>
+                    <button id="btn-toggle-json-raw" class="btn-tool" style="display: none;">🔄 切換原始碼/樹狀</button>
+                    <button id="btn-open-search" class="btn-tool">🔍 搜尋/過濾</button>
+                    <span id="file-name-display" class="file-name"></span>
                 </div>
 
-                <!-- 右側過濾提取面板 -->
-                <div class="right-pane">
-                    <div class="filter-header">
-                        <input type="text" id="search-input" class="filter-input" placeholder="過濾關鍵字 / Regex...">
-                        <span id="filter-stats" class="filter-stats">請先載入檔案</span>
+                <!-- 主要內容呈現區 (100% 滿版) -->
+                <div class="main-viewport">
+                    <!-- 1. 純文字 / 程式碼 CodeMirror 容器 -->
+                    <div id="single-editor-container" class="view-panel" style="display: none;">
+                        <div id="editor-container"></div>
                     </div>
-                    <div id="filter-results" class="filter-results">
-                        <!-- 搜尋結果項目 -->
+
+                    <!-- 2. Markdown 專用可拖拉雙欄容器 -->
+                    <div id="split-container" class="split-view-container" style="display: none;">
+                        <div id="split-left" class="split-pane">
+                            <div id="md-editor-container"></div>
+                        </div>
+                        <div id="split-resizer" class="split-resizer" title="左右拖拉調整比例"></div>
+                        <div id="split-right" class="split-pane">
+                            <div id="md-preview-paper" class="md-preview-body"></div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Word 專屬 A4 紙張預覽容器 -->
+                    <div id="word-container" class="view-panel doc-viewport" style="display: none;">
+                        <div id="word-paper" class="doc-paper"></div>
+                    </div>
+
+                    <!-- 4. Tabulator 表格容器 (CSV & Excel) -->
+                    <div id="grid-container" class="view-panel" style="display: none; height: 100%;"></div>
+
+                    <!-- 5. JSON 專屬樹狀視覺化編輯器容器 -->
+                    <div id="json-tree-container" class="view-panel" style="display: none; height: 100%;"></div>
+                </div>
+
+                <!-- 抽屜式/滑出式搜尋面板 (預設隱藏) -->
+                <div id="search-drawer" class="search-drawer">
+                    <div class="drawer-header">
+                        <span class="drawer-title">🔍 搜尋與過濾</span>
+                        <button id="btn-close-search" class="btn-icon" title="關閉">✕</button>
+                    </div>
+                    <div class="drawer-body">
+                        <input type="text" id="search-input" class="filter-input" placeholder="輸入關鍵字或 Regex...">
+                        <span id="filter-stats" class="filter-stats">共 0 筆結果</span>
+                        <div id="filter-results" class="filter-results">
+                            <!-- 搜尋結果項目 -->
+                        </div>
                     </div>
                 </div>
             </div>
