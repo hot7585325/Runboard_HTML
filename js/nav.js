@@ -11,7 +11,8 @@
         { title: '📋 任務清單', url: 'tasks.html' },
         { title: '🔒 密碼區', url: 'passwords.html' },
         { title: '🗂️ 目錄節點圖', url: 'folder_graph.html' },
-        { title: '🖥️ 系統資訊', url: 'sysinfo.html' }
+        { title: '🖥️ 系統資訊', url: 'sysinfo.html' },
+        { title: '✨ 通用編輯器', url: 'smart_editor.html' }
     ];
 
     function renderSidebar() {

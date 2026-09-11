@@ -34,6 +34,9 @@
                         <button type="button" class="graph-toolbar-btn" id="btn-reset-view" onclick="FolderGraphApp.resetView()">
                             <span>🔍</span> <span>重設視角 (1.0x)</span>
                         </button>
+                        <button type="button" class="graph-toolbar-btn danger" id="btn-clear-graph" onclick="FolderGraphApp.clearDirectory()" title="清除當前目錄節點與快照紀錄">
+                            <span>🗑️</span> <span>清除目錄</span>
+                        </button>
                     </div>
 
                     <div class="graph-toolbar-group">
@@ -58,6 +61,9 @@
                         </div>
                         <div class="graph-status-badge" id="badge-file-count">
                             <span>📄</span> <span id="lbl-file-count">0 個檔案</span>
+                        </div>
+                        <div class="graph-status-badge" id="badge-total-size">
+                            <span>💾</span> <span id="lbl-total-size">0 B</span>
                         </div>
                         <div class="graph-status-badge" id="badge-zoom">
                             <span>🔎</span> <span id="lbl-zoom">100%</span>

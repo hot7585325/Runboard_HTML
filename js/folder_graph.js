@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Runboard - 目錄節點圖 (Folder Graph)
  * 採用 Godot GraphNode / Unreal Blueprint 節點畫布風格
  * 遞迴掃描本機資料夾，並以節點連線圖視覺化呈現目錄架構與檔案分佈
@@ -43,6 +43,7 @@ const FolderGraphApp = (function () {
         dom.lblRootName = document.getElementById('lbl-root-name');
         dom.lblNodeCount = document.getElementById('lbl-node-count');
         dom.lblFileCount = document.getElementById('lbl-file-count');
+        dom.lblTotalSize = document.getElementById('lbl-total-size');
         dom.lblZoom = document.getElementById('lbl-zoom');
         dom.selectDepth = document.getElementById('select-max-depth');
         dom.toast = document.getElementById('graph-toast');
@@ -63,6 +64,17 @@ const FolderGraphApp = (function () {
     }
 
     /**
+     * 檔案大小格式化 (Bytes -> B, KB, MB, GB, TB)
+     */
+    function formatBytes(bytes) {
+        if (!bytes || bytes <= 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    /**
      * 遞迴掃描目錄核心
      */
     async function traverseDirectory(handle, relativePath = '', depth = 1, parentId = null) {
@@ -78,6 +90,8 @@ const FolderGraphApp = (function () {
             childrenIds: [],
             directFileCount: 0,
             totalFileCount: 0,
+            directSizeBytes: 0,
+            totalSizeBytes: 0,
             directFolderCount: 0,
             extStats: {}, // { [ext]: count }
             isCollapsed: false
@@ -93,6 +107,13 @@ const FolderGraphApp = (function () {
                     let ext = nameParts.length > 1 ? '.' + nameParts.pop().toLowerCase() : '(無副檔名)';
                     if (ext.length > 10) ext = ext.substring(0, 10);
                     node.extStats[ext] = (node.extStats[ext] || 0) + 1;
+
+                    try {
+                        const file = await entry.getFile();
+                        node.directSizeBytes += (file.size || 0);
+                    } catch (fileErr) {
+                        // 忽略無法讀取特定檔案中繼資料之例外
+                    }
                 } else if (entry.kind === 'directory') {
                     // 忽略隱藏的 git 等系統目錄，維持視覺整潔
                     if (!entry.name.startsWith('.git')) {
@@ -108,6 +129,7 @@ const FolderGraphApp = (function () {
         // 遞迴處理子資料夾（受 maxScanDepth 限制）
         const childrenNodes = [];
         let subFilesSum = 0;
+        let subSizeSum = 0;
 
         if (depth < maxScanDepth) {
             for (const subHandle of subDirectoryHandles) {
@@ -115,10 +137,12 @@ const FolderGraphApp = (function () {
                 node.childrenIds.push(childNode.id);
                 childrenNodes.push(childNode);
                 subFilesSum += childNode.totalFileCount;
+                subSizeSum += (childNode.totalSizeBytes || 0);
             }
         }
 
         node.totalFileCount = node.directFileCount + subFilesSum;
+        node.totalSizeBytes = node.directSizeBytes + subSizeSum;
         node.children = childrenNodes;
         return node;
     }
@@ -321,6 +345,44 @@ const FolderGraphApp = (function () {
         showToast('視角已重設 (100%)');
     }
 
+    /**
+     * 清除當前目錄與快照紀錄
+     */
+    function clearDirectory() {
+        if (!rawDirectoryTree && flatNodes.length === 0) {
+            showToast('目前無已載入的目錄');
+            return;
+        }
+
+        if (!confirm('確定要清除當前目錄節點與快照紀錄嗎？')) {
+            return;
+        }
+
+        rawDirectoryTree = null;
+        flatNodes = [];
+        collapsedNodeIds.clear();
+        nodePositions = {};
+        currentDirHandle = null;
+
+        // 清除持久化快照
+        try {
+            const data = Storage.getData();
+            if (data && data.folderGraphSnapshot) {
+                delete data.folderGraphSnapshot;
+                Storage.save();
+            }
+        } catch (e) {
+            console.warn('清除快照失敗:', e);
+        }
+
+        // 清空畫布 DOM 與連線
+        if (dom.nodesLayer) dom.nodesLayer.innerHTML = '';
+        if (dom.edgesGroup) dom.edgesGroup.innerHTML = '';
+
+        updateToolbarInfo();
+        showToast('已清除目錄節點與快照紀錄');
+    }
+
     function applyTransform() {
         if (dom.transformLayer) {
             dom.transformLayer.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
@@ -338,12 +400,15 @@ const FolderGraphApp = (function () {
             if (dom.lblRootName) dom.lblRootName.innerText = '未載入目錄';
             if (dom.lblNodeCount) dom.lblNodeCount.innerText = '0 個節點';
             if (dom.lblFileCount) dom.lblFileCount.innerText = '0 個檔案';
+            if (dom.lblTotalSize) dom.lblTotalSize.innerText = '0 B';
+            updateZoomBadge();
             return;
         }
 
         if (dom.lblRootName) dom.lblRootName.innerText = rawDirectoryTree.name;
         if (dom.lblNodeCount) dom.lblNodeCount.innerText = `${flatNodes.length} 個節點`;
         if (dom.lblFileCount) dom.lblFileCount.innerText = `${rawDirectoryTree.totalFileCount} 個檔案`;
+        if (dom.lblTotalSize) dom.lblTotalSize.innerText = formatBytes(rawDirectoryTree.totalSizeBytes);
         updateZoomBadge();
     }
 
@@ -508,8 +573,8 @@ const FolderGraphApp = (function () {
                     <div class="graph-node-path" title="${node.path}">${node.path}</div>
                     
                     <div class="graph-node-stats-row">
-                        <span class="graph-node-badge badge-highlight">📄 總計 ${node.totalFileCount} 檔</span>
-                        <span class="graph-node-badge">直屬 ${node.directFileCount} 檔 / ${node.directFolderCount} 資料夾</span>
+                        <span class="graph-node-badge badge-highlight" title="包含子資料夾之累計檔案與容量">📄 總計 ${node.totalFileCount} 檔 · 💾 ${formatBytes(node.totalSizeBytes)}</span>
+                        <span class="graph-node-badge" title="直屬檔案與資料夾">直屬 ${node.directFileCount} 檔 / ${node.directFolderCount} 夾</span>
                     </div>
 
                     <div class="graph-node-tags">
@@ -685,6 +750,7 @@ const FolderGraphApp = (function () {
         scanDirectory,
         autoLayout,
         resetView,
+        clearDirectory,
         changeMaxDepth,
         toggleCollapse,
         copyPath,

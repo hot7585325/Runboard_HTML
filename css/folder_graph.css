@@ -1,4 +1,4 @@
-﻿/* ================= 🗂️ 目錄節點圖 (Folder Graph) ================= */
+/* ================= 🗂️ 目錄節點圖 (Folder Graph) ================= */
 .main-content.folder-graph-page {
     padding: 0;
     overflow: hidden;
@@ -87,6 +87,17 @@
 
 .graph-toolbar-btn.primary:hover {
     background: var(--accent-hover);
+}
+
+.graph-toolbar-btn.danger {
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+.graph-toolbar-btn.danger:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: var(--danger-color);
+    color: #fca5a5;
 }
 
 .graph-toolbar-info {
@@ -283,6 +294,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: 6px;
 }
 
