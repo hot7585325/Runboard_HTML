@@ -23,37 +23,87 @@ const TasksApp = (function () {
             .replace(/'/g, '&#39;');
     }
 
-    // 計算截止日期狀態與產生 Badge HTML
-    function getDueDateBadge(dueDate, isDone) {
-        if (!dueDate) return '';
+    // 解析 YYYY-MM-DD 為 Date 物件 (以本地時區計算)
+    function parseDate(dateStr) {
+        if (!dateStr) return null;
+        const parts = dateStr.split('-').map(Number);
+        if (parts.length < 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) return null;
+        return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
 
-        const parts = dueDate.split('-').map(Number);
-        if (parts.length < 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) return '';
+    function formatShortDate(dateStr) {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length >= 3) {
+            return `${parts[1]}/${parts[2]}`;
+        }
+        return dateStr;
+    }
 
-        const [y, m, d] = parts;
+    // 計算排程時間狀態與產生 Badge HTML (支援開始日期與截止日期)
+    function getScheduleBadge(startDate, dueDate, isDone) {
+        if (!startDate && !dueDate) return '';
+
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const target = new Date(y, m - 1, d);
 
-        const diffMs = target.getTime() - today.getTime();
-        const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-        const formattedDate = `${String(m).padStart(2, '0')}/${String(d).padStart(2, '0')}`;
+        const startObj = parseDate(startDate);
+        const dueObj = parseDate(dueDate);
 
-        if (isDone) {
-            return `<span class="task-due-badge done" title="截止日: ${escapeHtml(dueDate)}">📅 ${formattedDate}</span>`;
-        }
+        const startStr = formatShortDate(startDate);
+        const dueStr = formatShortDate(dueDate);
 
-        if (diffDays < 0) {
-            const overdueDays = Math.abs(diffDays);
-            const text = overdueDays === 1 ? '⚠️ 逾期 1 天' : `⚠️ 逾期 ${overdueDays} 天`;
-            return `<span class="task-due-badge overdue" title="截止日: ${escapeHtml(dueDate)}">${text} (${formattedDate})</span>`;
-        } else if (diffDays === 0) {
-            return `<span class="task-due-badge today" title="截止日: ${escapeHtml(dueDate)}">⚡ 今天到期</span>`;
-        } else if (diffDays === 1) {
-            return `<span class="task-due-badge tomorrow" title="截止日: ${escapeHtml(dueDate)}">⏰ 明天到期</span>`;
+        // 顯示字串組合 (例如 09/12 ~ 09/18 或 單一日期)
+        let labelDate = '';
+        let fullTitle = '';
+        if (startDate && dueDate) {
+            labelDate = `${startStr} ~ ${dueStr}`;
+            fullTitle = `排程: ${startDate} 至 ${dueDate}`;
+        } else if (dueDate) {
+            labelDate = dueStr;
+            fullTitle = `截止日: ${dueDate}`;
         } else {
-            return `<span class="task-due-badge future" title="截止日: ${escapeHtml(dueDate)}">📅 ${formattedDate}</span>`;
+            labelDate = `${startStr} 起`;
+            fullTitle = `開始日: ${startDate}`;
         }
+
+        // 1. 已完成狀態
+        if (isDone) {
+            return `<span class="task-due-badge done" title="${escapeHtml(fullTitle)}">📅 ${labelDate}</span>`;
+        }
+
+        // 2. 截止日判斷
+        if (dueObj) {
+            const diffMs = dueObj.getTime() - today.getTime();
+            const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 0) {
+                const overdueDays = Math.abs(diffDays);
+                const text = overdueDays === 1 ? '⚠️ 逾期 1 天' : `⚠️ 逾期 ${overdueDays} 天`;
+                return `<span class="task-due-badge overdue" title="${escapeHtml(fullTitle)}">${text} (${labelDate})</span>`;
+            } else if (diffDays === 0) {
+                return `<span class="task-due-badge today" title="${escapeHtml(fullTitle)}">⚡ 今天到期 (${labelDate})</span>`;
+            } else if (diffDays === 1) {
+                return `<span class="task-due-badge tomorrow" title="${escapeHtml(fullTitle)}">⏰ 明天到期 (${labelDate})</span>`;
+            }
+        }
+
+        // 3. 開始日判斷 (尚未到達開始日期)
+        if (startObj) {
+            const diffStartMs = startObj.getTime() - today.getTime();
+            const diffStartDays = Math.round(diffStartMs / (1000 * 60 * 60 * 24));
+            if (diffStartDays > 0) {
+                return `<span class="task-due-badge not-started-yet" title="${escapeHtml(fullTitle)}">⏳ 預計 ${startStr} 開始</span>`;
+            }
+        }
+
+        // 4. 一般日程
+        return `<span class="task-due-badge future" title="${escapeHtml(fullTitle)}">📅 ${labelDate}</span>`;
+    }
+
+    // 保留向後相容別名
+    function getDueDateBadge(dueDate, isDone) {
+        return getScheduleBadge(null, dueDate, isDone);
     }
 
     function handleSearch(keyword) {
@@ -137,7 +187,41 @@ const TasksApp = (function () {
                     const status = task.status || 'not_started';
                     const statusStr = status === 'done' ? '完成' : status === 'in_progress' ? '進行中' : '未開始';
                     const doneClass = status === 'done' ? 'status-done' : '';
-                    const dueBadge = getDueDateBadge(task.dueDate, status === 'done');
+                    const scheduleBadge = getScheduleBadge(task.startDate, task.dueDate, status === 'done');
+
+                    const hasDesc = Boolean(task.description && task.description.trim());
+                    const hasSolution = Boolean(task.solution && task.solution.trim());
+                    const hasDetails = hasDesc || hasSolution;
+
+                    let expandBtnHtml = '';
+                    if (hasDetails) {
+                        expandBtnHtml = `
+                        <button type="button" class="btn-expand-details ${task._expanded ? 'active' : ''}" onclick="TasksApp.toggleTaskExpand(${catIdx}, ${taskIdx})" title="${task._expanded ? '收合詳情' : '展開詳情'}">
+                            <span>${hasSolution ? '💡' : '📄'} 詳情</span>
+                            <span class="arrow-icon">▼</span>
+                        </button>
+                        `;
+                    }
+
+                    let detailsHtml = '';
+                    if (hasDetails) {
+                        detailsHtml = `
+                        <div class="task-details ${task._expanded ? '' : 'collapsed'}">
+                            ${hasDesc ? `
+                                <div class="task-desc-box">
+                                    <div class="task-desc-header">📝 詳細說明</div>
+                                    <div>${escapeHtml(task.description.trim())}</div>
+                                </div>
+                            ` : ''}
+                            ${hasSolution ? `
+                                <div class="task-solution-box">
+                                    <div class="task-solution-header">💡 完成解法與備註</div>
+                                    <div>${escapeHtml(task.solution.trim())}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        `;
+                    }
 
                     html += `
                     <div class="task-item" draggable="true"
@@ -146,13 +230,18 @@ const TasksApp = (function () {
                         ondragover="TasksApp.handleItemDragOver(event)"
                         ondragleave="TasksApp.handleItemDragLeave(event)"
                         ondrop="TasksApp.handleItemDrop(event, ${catIdx}, ${taskIdx})">
-                        <div class="status-badge status-${status}" onclick="TasksApp.toggleTaskStatus(${catIdx}, ${taskIdx})">${statusStr}</div>
-                        <div class="task-text ${doneClass}">${escapeHtml(task.text || '')}</div>
-                        ${dueBadge}
-                        <div class="task-actions">
-                            <button class="btn btn-small" onclick="TasksApp.openEditTask(${catIdx}, ${taskIdx})">✏️</button>
-                            <button class="btn btn-small" style="color:var(--danger-color); border-color:transparent;" onclick="TasksApp.deleteTask(${catIdx}, ${taskIdx})">🗑️</button>
+                        <div class="task-main-row">
+                            <div class="status-badge status-${status}" onclick="TasksApp.toggleTaskStatus(${catIdx}, ${taskIdx})">${statusStr}</div>
+                            <div class="task-text ${doneClass}">${escapeHtml(task.text || '')}</div>
+                            ${scheduleBadge}
+                            ${expandBtnHtml}
+                            <div class="task-actions">
+                                ${status === 'done' ? `<button class="btn btn-small" title="記錄或編輯解法備註" onclick="TasksApp.promptSolution(${catIdx}, ${taskIdx})">💡</button>` : ''}
+                                <button class="btn btn-small" onclick="TasksApp.openEditTask(${catIdx}, ${taskIdx})">✏️</button>
+                                <button class="btn btn-small" style="color:var(--danger-color); border-color:transparent;" onclick="TasksApp.deleteTask(${catIdx}, ${taskIdx})">🗑️</button>
+                            </div>
                         </div>
+                        ${detailsHtml}
                     </div>
                     `;
                 });
@@ -170,17 +259,71 @@ const TasksApp = (function () {
         listContainer.innerHTML = html;
     }
 
+    // 切換單一任務詳細內容展開/收合
+    function toggleTaskExpand(catIdx, taskIdx) {
+        const task = getTasks()[catIdx]?.items[taskIdx];
+        if (!task) return;
+        task._expanded = !task._expanded;
+        render();
+    }
+
+    // 彈出解法/覆盤備註記錄視窗
+    function promptSolution(catIdx, taskIdx) {
+        const task = getTasks()[catIdx]?.items[taskIdx];
+        if (!task) return;
+
+        Modal.open({
+            title: '💡 記錄完成解法與覆盤備註',
+            html: `
+                <div style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px; line-height: 1.5;">
+                    任務：<strong style="color: white;">${escapeHtml(task.text)}</strong><br>
+                    可在此記錄此問題的解法、踩坑心得或關鍵收穫（留空儲存則清空備註）：
+                </div>
+                <div class="form-group">
+                    <label>解法與備註說明 (支援多行)</label>
+                    <textarea id="ipt-task-solution" rows="5" placeholder="例如：在某模組修復了快取機制，需注意跨平台時區差異...">${escapeHtml(task.solution || '')}</textarea>
+                </div>
+            `,
+            onConfirm: async () => {
+                const sol = document.getElementById('ipt-task-solution').value.trim();
+                if (sol) {
+                    task.solution = sol;
+                    task._expanded = true; // 填寫後預設展開以利檢視
+                } else {
+                    delete task.solution;
+                }
+                await Storage.save();
+                render();
+                return true;
+            }
+        });
+    }
+
     // 切換任務狀態: not_started -> in_progress -> done -> not_started
     async function toggleTaskStatus(catIdx, taskIdx) {
         const task = getTasks()[catIdx]?.items[taskIdx];
         if (!task) return;
 
-        if (task.status === 'not_started') task.status = 'in_progress';
-        else if (task.status === 'in_progress') task.status = 'done';
-        else task.status = 'not_started';
+        let shouldPromptSolution = false;
+        if (task.status === 'not_started') {
+            task.status = 'in_progress';
+        } else if (task.status === 'in_progress') {
+            task.status = 'done';
+            if (!task.solution) {
+                shouldPromptSolution = true;
+            }
+        } else {
+            task.status = 'not_started';
+        }
 
         await Storage.save();
         render();
+
+        if (shouldPromptSolution) {
+            setTimeout(() => {
+                promptSolution(catIdx, taskIdx);
+            }, 60);
+        }
     }
 
     // 收合分類
@@ -380,25 +523,42 @@ const TasksApp = (function () {
             title: '新增任務',
             html: `
                 <div class="form-group">
-                    <label>任務內容</label>
-                    <input type="text" id="ipt-task" placeholder="輸入任務內容...">
+                    <label>任務主旨 / 標題</label>
+                    <input type="text" id="ipt-task" placeholder="輸入任務主旨...">
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>開始日期 (選填)</label>
+                        <input type="date" id="ipt-task-start">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>截止日期 (選填)</label>
+                        <input type="date" id="ipt-task-due">
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label>截止日期 (選填)</label>
-                    <input type="date" id="ipt-task-due">
+                    <label>詳細內文說明 (選填，支援多行)</label>
+                    <textarea id="ipt-task-desc" rows="3" placeholder="輸入任務背景、具體步驟或驗收標準..."></textarea>
                 </div>
             `,
             onConfirm: async () => {
                 const text = document.getElementById('ipt-task').value.trim();
                 if (!text) {
-                    alert('內容為必填');
+                    alert('任務主旨為必填');
                     return false;
                 }
+                const startDate = document.getElementById('ipt-task-start').value || null;
                 const dueDate = document.getElementById('ipt-task-due').value || null;
+                const description = document.getElementById('ipt-task-desc').value.trim() || null;
+
                 const cat = getTasks()[catIdx];
                 if (!cat.items) cat.items = [];
+
                 const newTask = { text, status: 'not_started' };
+                if (startDate) newTask.startDate = startDate;
                 if (dueDate) newTask.dueDate = dueDate;
+                if (description) newTask.description = description;
+
                 cat.items.push(newTask);
                 await Storage.save();
                 render();
@@ -413,27 +573,53 @@ const TasksApp = (function () {
             title: '編輯任務',
             html: `
                 <div class="form-group">
-                    <label>任務內容</label>
+                    <label>任務主旨 / 標題</label>
                     <input type="text" id="ipt-task" value="${escapeHtml(task.text || '')}">
                 </div>
+                <div style="display: flex; gap: 12px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>開始日期 (選填)</label>
+                        <input type="date" id="ipt-task-start" value="${task.startDate || ''}">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>截止日期 (選填)</label>
+                        <input type="date" id="ipt-task-due" value="${task.dueDate || ''}">
+                    </div>
+                </div>
                 <div class="form-group">
-                    <label>截止日期 (選填)</label>
-                    <input type="date" id="ipt-task-due" value="${task.dueDate || ''}">
+                    <label>詳細內文說明 (選填，支援多行)</label>
+                    <textarea id="ipt-task-desc" rows="3" placeholder="輸入任務背景、具體步驟或驗收標準...">${escapeHtml(task.description || '')}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>💡 完成解法與覆盤備註 (選填)</label>
+                    <textarea id="ipt-task-sol" rows="3" placeholder="記錄完成解法、心得或關鍵經驗...">${escapeHtml(task.solution || '')}</textarea>
                 </div>
             `,
             onConfirm: async () => {
                 const text = document.getElementById('ipt-task').value.trim();
                 if (!text) {
-                    alert('內容為必填');
+                    alert('任務主旨為必填');
                     return false;
                 }
+                const startDate = document.getElementById('ipt-task-start').value || null;
                 const dueDate = document.getElementById('ipt-task-due').value || null;
+                const description = document.getElementById('ipt-task-desc').value.trim() || null;
+                const solution = document.getElementById('ipt-task-sol').value.trim() || null;
+
                 task.text = text;
-                if (dueDate) {
-                    task.dueDate = dueDate;
-                } else {
-                    delete task.dueDate;
-                }
+
+                if (startDate) task.startDate = startDate;
+                else delete task.startDate;
+
+                if (dueDate) task.dueDate = dueDate;
+                else delete task.dueDate;
+
+                if (description) task.description = description;
+                else delete task.description;
+
+                if (solution) task.solution = solution;
+                else delete task.solution;
+
                 await Storage.save();
                 render();
                 return true;
@@ -460,6 +646,8 @@ const TasksApp = (function () {
         handleSearch,
         toggleHideDone,
         toggleTaskStatus,
+        toggleTaskExpand,
+        promptSolution,
         toggleCategory,
         handleDragStart,
         handleCategoryDragStart,

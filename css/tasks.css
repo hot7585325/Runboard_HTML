@@ -1,4 +1,4 @@
-﻿/* ================= 任務清單區 (Tasks) ================= */
+/* ================= 任務清單區 (Tasks) ================= */
 .task-progress-badge {
     font-size: 12px;
     font-weight: 500;
@@ -31,13 +31,20 @@
 .task-item {
     background-color: var(--sidebar-bg);
     border: 1px solid var(--border-color);
-    padding: 15px;
+    padding: 12px 15px;
     border-radius: var(--radius-md);
     display: flex;
-    align-items: center;
-    gap: 15px;
+    flex-direction: column;
+    gap: 8px;
     cursor: grab;
     transition: all 0.2s ease;
+}
+
+.task-main-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
 }
 
 .task-item.dragging {
@@ -154,4 +161,106 @@
 input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(0.8);
     cursor: pointer;
+}
+
+/* 任務詳細資訊容器 (展開/收合) */
+.task-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 4px;
+    padding-left: 2px;
+}
+
+.task-details.collapsed {
+    display: none;
+}
+
+/* 詳細說明區塊 */
+.task-desc-box {
+    background-color: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: #cbd5e1;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.task-desc-header {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+/* 💡 完成解法與備註區塊 */
+.task-solution-box {
+    background-color: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: #a7f3d0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.task-solution-header {
+    font-size: 12px;
+    font-weight: 600;
+    color: #34d399;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* 展開/收合按鈕 */
+.btn-expand-details {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.btn-expand-details:hover {
+    color: white;
+    background-color: var(--hover-bg);
+    border-color: var(--border-color);
+}
+
+.btn-expand-details .arrow-icon {
+    font-size: 10px;
+    transition: transform 0.2s ease;
+}
+
+.btn-expand-details.active .arrow-icon {
+    transform: rotate(180deg);
+}
+
+/* 排程尚未開始狀態 */
+.task-due-badge.not-started-yet {
+    background-color: rgba(99, 102, 241, 0.15);
+    color: #a5b4fc;
+    border-color: rgba(99, 102, 241, 0.35);
+}
+
+/* 工具列歸檔按鈕 */
+.btn-archive:hover {
+    border-color: #f59e0b;
+    color: #fbbf24;
 }
