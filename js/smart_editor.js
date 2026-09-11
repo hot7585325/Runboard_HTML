@@ -25,6 +25,8 @@
         searchInput: document.getElementById('search-input'),
         filterResults: document.getElementById('filter-results'),
         filterStats: document.getElementById('filter-stats'),
+        btnNewMenu: document.getElementById('btn-new-menu'),
+        dropdownNewContent: document.getElementById('dropdown-new-content'),
         
         // Panels
         singleEditorContainer: document.getElementById('single-editor-container'),
@@ -41,7 +43,7 @@
         jsonTreeContainer: document.getElementById('json-tree-container')
     };
 
-    // --- Core File Picker ---
+    // --- 1. Core File Picker (Open Existing) ---
     async function selectFile() {
         try {
             const [handle] = await window.showOpenFilePicker({
@@ -70,17 +72,95 @@
         }
     }
 
-    // --- Route by Extension ---
-    async function routeFile(file) {
-        // Hide all view panels
+    // --- 2. Create New File (Templates) ---
+    function createNewFile(type) {
+        currentHandle = null; // No handle yet -> will trigger showSaveFilePicker on save
+        currentExt = type;
+
+        ui.noDataMsg.style.display = 'none';
+        ui.appContainer.style.display = 'block';
+
+        // Clear sub-components
+        resetPanels();
+
+        const defaultNames = {
+            md: '未命名筆記.md',
+            csv: '未命名試算表.csv',
+            json: '未命名資料.json',
+            txt: '未命名文字.txt'
+        };
+        ui.fileName.textContent = `⚡ ${defaultNames[type] || '未命名檔案'} (尚未存檔)`;
+        ui.btnSave.style.display = 'flex';
+
+        if (type === 'md') {
+            const defaultMd = '# 未命名筆記\n\n開始在此書寫你的筆記內容...\n\n- 項目 1\n- 項目 2\n';
+            rawTextLines = defaultMd.split('\n');
+            ui.splitContainer.style.display = 'flex';
+
+            initCodeMirror(ui.mdEditorContainer, defaultMd, 'md', (newVal) => {
+                ui.mdPreviewPaper.innerHTML = marked.parse(newVal);
+                rawTextLines = newVal.split('\n');
+                runFilter(ui.searchInput.value);
+            });
+            ui.mdPreviewPaper.innerHTML = marked.parse(defaultMd);
+            runFilter('');
+
+        } else if (type === 'csv') {
+            const defaultCsv = '名稱,數量,單價,備註\n蘋果,10,25,新鮮到貨\n香蕉,5,15,特價中\n橘子,8,30,甜度高\n';
+            rawTextLines = defaultCsv.split('\n');
+            ui.gridContainer.style.display = 'block';
+            ui.btnToggleCsvRaw.style.display = 'flex';
+            ui.btnToggleCsvRaw.innerHTML = '📝 切換原始碼';
+
+            initCodeMirror(ui.editorContainer, defaultCsv, 'csv', (newVal) => {
+                rawTextLines = newVal.split('\n');
+                runFilter(ui.searchInput.value);
+            });
+            renderCsvToTabulator(defaultCsv, true);
+            runFilter('');
+
+        } else if (type === 'json') {
+            const defaultJson = {
+                "title": "新建設定檔",
+                "version": "1.0.0",
+                "active": true,
+                "items": ["範例項目 1", "範例項目 2"]
+            };
+            const jsonText = JSON.stringify(defaultJson, null, 2);
+            rawTextLines = jsonText.split('\n');
+
+            ui.jsonTreeContainer.style.display = 'block';
+            ui.btnToggleJsonRaw.style.display = 'flex';
+            ui.btnToggleJsonRaw.innerHTML = '📝 切換原始碼';
+
+            initJSONEditor(defaultJson);
+            initCodeMirror(ui.editorContainer, jsonText, 'json', (newVal) => {
+                rawTextLines = newVal.split('\n');
+                runFilter(ui.searchInput.value);
+            });
+            runFilter('');
+
+        } else {
+            // txt or general text
+            const defaultTxt = '';
+            rawTextLines = [];
+            ui.singleEditorContainer.style.display = 'block';
+
+            initCodeMirror(ui.editorContainer, defaultTxt, 'txt', (newVal) => {
+                rawTextLines = newVal.split('\n');
+                runFilter(ui.searchInput.value);
+            });
+            runFilter('');
+        }
+    }
+
+    function resetPanels() {
         ui.singleEditorContainer.style.display = 'none';
         ui.splitContainer.style.display = 'none';
         ui.wordContainer.style.display = 'none';
         ui.gridContainer.style.display = 'none';
         ui.jsonTreeContainer.style.display = 'none';
 
-        // Reset Toolbar Buttons
-        ui.btnSave.style.display = 'none';
         ui.btnToggleCsvRaw.style.display = 'none';
         ui.btnToggleJsonRaw.style.display = 'none';
         ui.searchInput.value = '';
@@ -98,6 +178,12 @@
             jsonEditor.destroy();
             jsonEditor = null;
         }
+    }
+
+    // --- 3. Route Existing File by Extension ---
+    async function routeFile(file) {
+        resetPanels();
+        ui.btnSave.style.display = 'none';
 
         if (currentExt === 'md') {
             await handleMarkdownFile(file);
@@ -116,7 +202,7 @@
         }
     }
 
-    // --- 1. Markdown Handler (Draggable Split View) ---
+    // --- File Handlers ---
     async function handleMarkdownFile(file) {
         const text = await file.text();
         rawTextLines = text.split('\n');
@@ -134,7 +220,6 @@
         runFilter('');
     }
 
-    // --- 2. JSON Handler (Tree Editor by default) ---
     async function handleJsonFile(file) {
         const text = await file.text();
         rawTextLines = text.split('\n');
@@ -148,7 +233,7 @@
             const jsonObj = JSON.parse(text);
             initJSONEditor(jsonObj);
         } catch (e) {
-            console.warn('JSON 語法有誤，降級切換至 CodeMirror 代碼模式:', e);
+            console.warn('JSON 語法有誤，切換至代碼模式:', e);
             toggleJsonRawView();
         }
 
@@ -176,7 +261,6 @@
         jsonEditor.expandAll();
     }
 
-    // --- 3. CSV Handler (Table Grid by default) ---
     async function handleCsvFile(file) {
         const text = await file.text();
         rawTextLines = text.split('\n');
@@ -195,7 +279,6 @@
         runFilter('');
     }
 
-    // --- 4. Single Text / Code Handler ---
     async function handleSingleTextFile(file) {
         const text = await file.text();
         rawTextLines = text.split('\n');
@@ -211,7 +294,6 @@
         runFilter('');
     }
 
-    // --- 5. Excel Handler (Modern Tabulator) ---
     async function handleExcelFile(file) {
         ui.gridContainer.style.display = 'block';
         const arrayBuffer = await file.arrayBuffer();
@@ -235,7 +317,6 @@
         }
     }
 
-    // --- 6. Word Handler (A4 Paper View) ---
     async function handleWordFile(file) {
         ui.wordContainer.style.display = 'flex';
         const arrayBuffer = await file.arrayBuffer();
@@ -364,14 +445,33 @@
         setTimeout(() => editor.refresh(), 50);
     }
 
-    // --- Save File Handler ---
+    // --- Save File Handler (Supports showSaveFilePicker for New Files) ---
     async function saveFile() {
-        if (!currentHandle) return;
         try {
+            // If new file without handle, trigger "Save As"
+            if (!currentHandle) {
+                const suggestedName = `未命名檔案.${currentExt}`;
+                const fileTypes = {
+                    md: { description: 'Markdown 筆記', accept: { 'text/markdown': ['.md'] } },
+                    csv: { description: 'CSV 試算表', accept: { 'text/csv': ['.csv'] } },
+                    json: { description: 'JSON 資料檔', accept: { 'application/json': ['.json'] } },
+                    txt: { description: '純文字檔', accept: { 'text/plain': ['.txt'] } }
+                };
+
+                const options = {
+                    suggestedName: suggestedName,
+                    types: fileTypes[currentExt] ? [fileTypes[currentExt]] : []
+                };
+
+                currentHandle = await window.showSaveFilePicker(options);
+                const file = await currentHandle.getFile();
+                ui.fileName.textContent = file.name;
+            }
+
             let contentToSave = '';
             if (currentExt === 'csv' && isCsvTableView) {
                 syncTabulatorToCodeMirror();
-                contentToSave = editor.getValue();
+                contentToSave = editor ? editor.getValue() : '';
             } else if (currentExt === 'json' && isJsonTreeView && jsonEditor) {
                 contentToSave = JSON.stringify(jsonEditor.get(), null, 2);
             } else if (editor) {
@@ -386,8 +486,10 @@
             ui.btnSave.innerHTML = '✅ 已儲存';
             setTimeout(() => ui.btnSave.innerHTML = origText, 2000);
         } catch (e) {
-            console.error(e);
-            alert('儲存失敗，可能是權限不足或檔案已被鎖定。');
+            if (e.name !== 'AbortError') {
+                console.error(e);
+                alert('儲存失敗：' + (e.message || e));
+            }
         }
     }
 
@@ -413,7 +515,6 @@
         if (currentExt !== 'json') return;
         isJsonTreeView = !isJsonTreeView;
         if (isJsonTreeView) {
-            // Raw -> Tree
             try {
                 const jsonObj = JSON.parse(editor.getValue());
                 ui.singleEditorContainer.style.display = 'none';
@@ -425,7 +526,6 @@
                 isJsonTreeView = false;
             }
         } else {
-            // Tree -> Raw
             if (jsonEditor) {
                 const jsonString = JSON.stringify(jsonEditor.get(), null, 2);
                 editor.setValue(jsonString);
@@ -490,8 +590,8 @@
 
     function runFilter(query) {
         ui.filterResults.innerHTML = '';
-        if (!currentHandle) {
-            ui.filterStats.textContent = '請先載入檔案';
+        if (!currentHandle && rawTextLines.length === 0) {
+            ui.filterStats.textContent = '請先輸入內容或載入檔案';
             return;
         }
 
@@ -511,7 +611,7 @@
             }
         }
 
-        // Text & Line-based filtering
+        // Text filtering
         let regex = null;
         if (query) {
             try { regex = new RegExp(query, 'i'); } catch (e) { regex = null; }
@@ -541,7 +641,6 @@
 
                     div.innerHTML = `<span class="result-line-num">L${i + 1}</span>${displayHtml}`;
 
-                    // Click to jump in CodeMirror
                     if (editor) {
                         div.addEventListener('click', () => {
                             editor.setCursor({line: i, ch: 0});
@@ -569,7 +668,26 @@
         }[tag]));
     }
 
-    // --- Event Listeners ---
+    // --- Dropdown Menu Logic ---
+    ui.btnNewMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
+        ui.dropdownNewContent.classList.toggle('show');
+    });
+
+    document.addEventListener('click', () => {
+        ui.dropdownNewContent.classList.remove('show');
+    });
+
+    // --- Event Listeners for Creating New Files ---
+    document.querySelectorAll('[data-create]').forEach(el => {
+        el.addEventListener('click', (e) => {
+            const type = e.currentTarget.getAttribute('data-create');
+            ui.dropdownNewContent.classList.remove('show');
+            createNewFile(type);
+        });
+    });
+
+    // --- Event Listeners for Open & Save ---
     document.getElementById('btn-initial-open').addEventListener('click', selectFile);
     document.getElementById('btn-open').addEventListener('click', selectFile);
     ui.btnSave.addEventListener('click', saveFile);

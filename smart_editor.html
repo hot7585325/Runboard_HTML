@@ -38,17 +38,52 @@
     <div id="sidebar"></div>
     <div class="main-content" style="padding: 0;">
         
-        <div id="no-data-msg" class="empty-state" style="margin-top: 100px;">
-            <h2>尚未選取檔案</h2>
-            <p>支援格式：.txt, .md, .csv, .json, .xlsx, .docx</p>
-            <br>
-            <button id="btn-initial-open" class="btn primary">📂 選取本機檔案</button>
+        <!-- 首頁歡迎/尚未選取檔案狀態 -->
+        <div id="no-data-msg" class="empty-state" style="margin-top: 60px;">
+            <h2>RunBoard 智慧檔案編輯器</h2>
+            <p>可直接開啟電腦中的檔案，或從空白範本新建檔案</p>
+            
+            <div style="margin: 25px 0;">
+                <button id="btn-initial-open" class="btn primary" style="font-size: 14px; padding: 8px 20px;">📂 選取本機現有檔案</button>
+            </div>
+
+            <div class="new-file-section">
+                <div class="new-file-title">或直接建立新檔案：</div>
+                <div class="new-file-cards">
+                    <button class="new-card-btn" data-create="md">
+                        <span class="card-icon">📝</span>
+                        <span class="card-label">Markdown 筆記 (.md)</span>
+                    </button>
+                    <button class="new-card-btn" data-create="csv">
+                        <span class="card-icon">📊</span>
+                        <span class="card-label">試算表資料 (.csv)</span>
+                    </button>
+                    <button class="new-card-btn" data-create="json">
+                        <span class="card-icon">⚙️</span>
+                        <span class="card-label">結構化資料 (.json)</span>
+                    </button>
+                    <button class="new-card-btn" data-create="txt">
+                        <span class="card-icon">📄</span>
+                        <span class="card-label">純文字檔案 (.txt)</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
+        <!-- 編輯器核心容器 -->
         <div id="app-container" style="display: none; height: 100%;">
             <div class="smart-editor-container">
                 <!-- 頂部工具列 -->
                 <div class="toolbar">
+                    <div class="dropdown-wrapper">
+                        <button id="btn-new-menu" class="btn-tool">➕ 新增檔案 ▾</button>
+                        <div id="dropdown-new-content" class="dropdown-menu">
+                            <a href="javascript:void(0)" data-create="md">📝 Markdown 筆記 (.md)</a>
+                            <a href="javascript:void(0)" data-create="csv">📊 試算表 (.csv)</a>
+                            <a href="javascript:void(0)" data-create="json">⚙️ JSON 資料 (.json)</a>
+                            <a href="javascript:void(0)" data-create="txt">📄 純文字檔 (.txt)</a>
+                        </div>
+                    </div>
                     <button id="btn-open" class="btn-tool">📂 開啟檔案</button>
                     <button id="btn-save" class="btn-tool primary" style="display: none;">💾 儲存修改</button>
                     <button id="btn-toggle-preview" class="btn-tool" style="display: none;">👁️ 切換預覽</button>
@@ -88,7 +123,7 @@
                     <div id="json-tree-container" class="view-panel" style="display: none; height: 100%;"></div>
                 </div>
 
-                <!-- 抽屜式/滑出式搜尋面板 (預設隱藏) -->
+                <!-- 抽屜式/滑出式搜尋面板 -->
                 <div id="search-drawer" class="search-drawer">
                     <div class="drawer-header">
                         <span class="drawer-title">🔍 搜尋與過濾</span>

@@ -1,34 +1,36 @@
 # 紀錄時間：2026-09-11
 
 ## 當前目標與背景
-將「通用檔案編輯器 (Smart Editor)」升級至 3.0，實現「資料視圖專用化 (Context-Aware Viewports)」與「靈活版面配置 (Adaptive Layout)」。
-徹底解決右側固定 30% 面板佔用空間的痛點，將滿版視野還給使用者。針對不同格式的本質特性，提供專屬的閱讀與編輯交互體驗（Word A4 擬真紙張、CSV/Excel 現代資料表格、Markdown 可拖拉雙欄即時對照、JSON 樹狀視覺化節點編輯）。
+將「通用檔案編輯器 (Smart Editor)」升級至完整創作工具，打破只能「讀取現有檔案修改」的限制，加入「從空白建立新檔案 (New File Creation)」能力。
+支援 Markdown、CSV、JSON、純文字檔案的快速範本建立，並整合 `window.showSaveFilePicker()` 實現第一次儲存自動喚起本機「另存新檔」流程。
 
 ## 已完成事項清單
+- [x] **雙入口新建系統**：
+  - 首頁歡迎區新增 4 種格式的快速卡片建立按鈕。
+  - 頂部工具列常駐「➕ 新增檔案 ▾」下拉式選單。
+- [x] **各格式專屬初始範本**：
+  - `MD`：自動初始化 Markdown 雙欄可拖拉視圖並填入基礎筆記結構。
+  - `CSV`：自動啟動 Tabulator 試算表格，並預填標準資料表頭與範例列。
+  - `JSON`：自動啟動 JSONEditor 樹狀視覺化節點並預載基礎 JSON 物件。
+  - `TXT`：啟動空白 CodeMirror 編輯器。
+- [x] **智慧另存新檔流程 (`showSaveFilePicker`)**：
+  - 判定未存檔的新建狀態，首次點擊「💾 儲存修改」自動呼叫原生存檔對話框。
+  - 儲存完成後自動綁定 Handle，後續編輯直接就地覆寫。
 - [x] **釋放 100% 視野**：移除常駐右側面板，單一檔案（Excel, Word, CSV, 純代碼）預設享有 100% 滿版無干擾視野。
-- [x] **滑出式搜尋抽屜 (Search Drawer)**：支援點擊頂部按鈕或按鍵盤快捷鍵 `Ctrl + F` / `Esc` 平滑滑出與收合，兼顧快速過濾與閱讀體驗。
-- [x] **Markdown 雙欄可拖拉即時對照 (Split View with Resizer)**：
-  - 打開 `.md` 時自動切換為左欄（CodeMirror 代碼編輯）+ 右欄（Marked.js HTML 即時預覽）。
-  - 實作 `.split-resizer` 滑鼠拖拉調節比例功能（15% ~ 85% 範圍限制）。
-  - CodeMirror 輸入內容時，右側預覽即時自動更新。
-- [x] **JSON 專用樹狀視覺化編輯器 (JSONEditor)**：
-  - 引入 JSONEditor CDN。
-  - 打開 `.json` 時自動呈現為層級樹狀節點（支援展開折疊、雙擊修改 Key/Value、型態防呆）。
-  - 提供「🔄 切換原始碼/樹狀」按鈕，在純代碼與視覺化節點之間雙向無縫互轉並支援儲存回本機。
-- [x] **CSV & Excel 專用試算表視圖 (Tabulator)**：
-  - 引入 Tabulator Midnight 深色主題。
-  - 支援凍結表頭 (Sticky Header)、點擊表頭排序 (Sort)、斑馬紋與滑鼠 Hover 高亮。
-  - **CSV 雙向編輯與序列化**：可直接雙擊儲存格編輯，按下儲存自動轉回標準 RFC 4180 CSV 格式寫回本機，並提供「切換原始碼」按鈕。
-- [x] **Word 專用 A4 文件視圖 (Mammoth.js)**：
-  - 實作 `.doc-paper` 居中 A4 擬真紙張容器，具備標準印刷邊距、陰影與專屬字型。
+- [x] **滑出式搜尋抽屜 (Search Drawer)**：支援 `Ctrl + F` / `Esc` 平滑滑出與收合。
+- [x] **Markdown 雙欄可拖拉即時對照 (Split View with Resizer)**。
+- [x] **JSON 專用樹狀視覺化編輯器 (JSONEditor)**。
+- [x] **CSV & Excel 專用試算表視圖 (Tabulator)**。
+- [x] **Word 專用 A4 文件視圖 (Mammoth.js)**。
 
 ## 操作快捷鍵與交互清單
 - `Ctrl + F` / `Cmd + F`：開啟右側搜尋抽屜。
 - `Esc`：關閉搜尋抽屜。
-- `Markdown 分隔線拖曳`：滑鼠左鍵按住中間分隔線左右拖動，即可即時調整編輯與預覽視窗比例。
+- `➕ 新增檔案 ▾`：頂部隨時開新檔案。
+- `Markdown 分隔線拖曳`：按住中間 Resizer 左右拖動調節比例。
 
 ## 核心檔案對照表
-- `smart_editor.html`：主視圖骨架，整合 CodeMirror, Tabulator, JSONEditor, Marked, SheetJS, Mammoth 六大 CDN 資源。
-- `css/smart_editor.css`：定義拖拉分隔條 (`.split-resizer`)、滿版檢視區塊、A4 文件擬真紙張與搜尋抽屜樣式。
-- `js/smart_editor.js`：核心邏輯控制中心（包含格式路由、滑鼠拖拉計算、Markdown 即時同步、JSON 樹狀雙向綁定、CSV 序列化與快捷鍵監聽）。
-- `js/nav.js`：全域側邊導覽列註冊處。
+- `smart_editor.html`：頁面骨架（新增下拉選單結構、首頁快速建立卡片）。
+- `css/smart_editor.css`：定義新建卡片視覺、下拉選單動畫與滿版佈局。
+- `js/smart_editor.js`：核心邏輯中心（包含 `createNewFile` 範本載入、`showSaveFilePicker` 另存新檔、雙向同步等）。
+- `js/nav.js`：全域側邊導覽列。
