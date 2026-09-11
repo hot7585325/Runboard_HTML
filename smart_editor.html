@@ -15,6 +15,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
 
+    <!-- Tabulator (Modern Data Grid for CSV & Excel) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.2/css/tabulator_midnight.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.2/js/tabulator.min.js"></script>
+
     <!-- Marked.js (Markdown Preview) -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
@@ -45,15 +49,20 @@
                         <button id="btn-open" class="btn-tool">📂 開啟檔案</button>
                         <button id="btn-save" class="btn-tool primary" style="display: none;">💾 儲存修改</button>
                         <button id="btn-toggle-preview" class="btn-tool" style="display: none;">👁️ 切換預覽</button>
+                        <button id="btn-toggle-csv-raw" class="btn-tool" style="display: none;">🔄 切換原始碼/表格</button>
                         <span id="file-name-display" class="file-name"></span>
                     </div>
                     <div class="content-area">
-                        <!-- CodeMirror 容器 -->
+                        <!-- CodeMirror 容器 (純文字 / 原始碼) -->
                         <div id="editor-container"></div>
-                        <!-- Markdown / Word 預覽容器 -->
+                        <!-- Markdown 預覽容器 -->
                         <div id="preview-container"></div>
-                        <!-- Excel 預覽容器 -->
-                        <div id="excel-container"></div>
+                        <!-- Word 專屬 A4 紙張預覽容器 -->
+                        <div id="word-container" class="doc-viewport" style="display: none;">
+                            <div id="word-paper" class="doc-paper"></div>
+                        </div>
+                        <!-- Tabulator 表格容器 (CSV & Excel) -->
+                        <div id="grid-container" style="display: none; height: 100%;"></div>
                     </div>
                 </div>
 
