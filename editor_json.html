@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RunBoard - JSON 結構編輯器</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/editor_common.css">
+    <link rel="stylesheet" href="css/editor_json.css">
+    
+    <!-- JSONEditor -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.4/jsoneditor.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.4/jsoneditor.min.js"></script>
+
+    <!-- CodeMirror (JSON 代碼模式) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/monokai.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+
+    <script src="js/nav.js"></script>
+</head>
+<body>
+    <div id="sidebar"></div>
+    <div class="main-content" style="padding: 0;">
+        <div class="smart-editor-container">
+            <!-- 頂部 10% 統一子分頁導覽列 -->
+            <div class="sub-nav-bar">
+                <div class="sub-nav-tabs">
+                    <a href="editor_md.html" class="sub-tab">📝 Markdown 筆記</a>
+                    <a href="editor_csv.html" class="sub-tab">📊 CSV 試算表</a>
+                    <a href="editor_json.html" class="sub-tab active">⚙️ JSON 樹狀</a>
+                    <a href="editor_doc.html" class="sub-tab">📑 Office 檢視</a>
+                    <a href="smart_editor.html" class="sub-tab">🏠 總覽與快開</a>
+                </div>
+            </div>
+
+            <!-- JSON 工具列 -->
+            <div class="toolbar">
+                <button id="btn-new" class="btn-tool">➕ 新增 JSON</button>
+                <button id="btn-open" class="btn-tool">📂 開啟 JSON</button>
+                <button id="btn-save" class="btn-tool primary">💾 儲存修改</button>
+                <button id="btn-toggle-raw" class="btn-tool">📝 切換原始碼</button>
+                <button id="btn-format" class="btn-tool">✨ 格式化排版</button>
+                <button id="btn-open-search" class="btn-tool">🔍 搜尋/過濾</button>
+                <span id="file-name-display" class="file-name">未命名資料.json (尚未存檔)</span>
+            </div>
+
+            <!-- 主要內容區 (90%) -->
+            <div class="main-viewport">
+                <!-- 樹狀視覺化容器 -->
+                <div id="json-tree-container" class="view-panel"></div>
+                <!-- 原始代碼容器 -->
+                <div id="raw-json-container" class="view-panel" style="display: none;"></div>
+            </div>
+
+            <!-- 滑出式搜尋抽屜 -->
+            <div id="search-drawer" class="search-drawer">
+                <div class="drawer-header">
+                    <span class="drawer-title">🔍 JSON 文字搜尋與跳轉</span>
+                    <button id="btn-close-search" class="btn-icon" title="關閉">✕</button>
+                </div>
+                <div class="drawer-body">
+                    <input type="text" id="search-input" class="filter-input" placeholder="輸入關鍵字或 Regex...">
+                    <span id="filter-stats" class="filter-stats">共 0 筆結果</span>
+                    <div id="filter-results" class="filter-results"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="js/editor_json.js"></script>
+</body>
+</html>

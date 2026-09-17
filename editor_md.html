@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RunBoard - Markdown 筆記</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/editor_common.css">
+    <link rel="stylesheet" href="css/editor_md.css">
+    
+    <!-- CodeMirror (Markdown) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/monokai.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/markdown/markdown.min.js"></script>
+
+    <!-- Marked.js (Markdown HTML 渲染) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <script src="js/nav.js"></script>
+</head>
+<body>
+    <div id="sidebar"></div>
+    <div class="main-content" style="padding: 0;">
+        <div class="smart-editor-container">
+            <!-- 頂部 10% 統一子分頁導覽列 -->
+            <div class="sub-nav-bar">
+                <div class="sub-nav-tabs">
+                    <a href="editor_md.html" class="sub-tab active">📝 Markdown 筆記</a>
+                    <a href="editor_csv.html" class="sub-tab">📊 CSV 試算表</a>
+                    <a href="editor_json.html" class="sub-tab">⚙️ JSON 樹狀</a>
+                    <a href="editor_doc.html" class="sub-tab">📑 Office 檢視</a>
+                    <a href="smart_editor.html" class="sub-tab">🏠 總覽與快開</a>
+                </div>
+            </div>
+
+            <!-- Markdown 工具列 -->
+            <div class="toolbar">
+                <button id="btn-new" class="btn-tool">➕ 新增筆記</button>
+                <button id="btn-open" class="btn-tool">📂 開啟 MD</button>
+                <button id="btn-save" class="btn-tool primary">💾 儲存修改</button>
+                <button id="btn-toggle-view" class="btn-tool">👁️ 切換單/雙欄</button>
+                <button id="btn-open-search" class="btn-tool">🔍 搜尋/過濾</button>
+                <span id="file-name-display" class="file-name">未命名筆記.md (尚未存檔)</span>
+            </div>
+
+            <!-- 主要內容區 (雙欄可拖拉) -->
+            <div class="main-viewport">
+                <div id="split-container" class="split-view-container">
+                    <div id="split-left" class="split-pane">
+                        <div id="md-editor-container"></div>
+                    </div>
+                    <div id="split-resizer" class="split-resizer" title="左右拖拉調整比例"></div>
+                    <div id="split-right" class="split-pane">
+                        <div id="md-preview-paper" class="md-preview-body"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 滑出式搜尋抽屜 -->
+            <div id="search-drawer" class="search-drawer">
+                <div class="drawer-header">
+                    <span class="drawer-title">🔍 筆記文字搜尋與跳轉</span>
+                    <button id="btn-close-search" class="btn-icon" title="關閉">✕</button>
+                </div>
+                <div class="drawer-body">
+                    <input type="text" id="search-input" class="filter-input" placeholder="輸入關鍵字或 Regex...">
+                    <span id="filter-stats" class="filter-stats">共 0 筆結果</span>
+                    <div id="filter-results" class="filter-results"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="js/editor_md.js"></script>
+</body>
+</html>

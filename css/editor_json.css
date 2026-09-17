@@ -1,0 +1,27 @@
+/* css/editor_json.css - JSON 樹狀結構專屬樣式 */
+
+#json-tree-container {
+    width: 100%;
+    height: 100%;
+    background-color: #1e1e1e;
+}
+
+.jsoneditor {
+    border: none !important;
+}
+
+.jsoneditor-menu {
+    background-color: #2d2d2d !important;
+    border-bottom: 1px solid #444 !important;
+}
+
+#raw-json-container {
+    width: 100%;
+    height: 100%;
+}
+
+.CodeMirror {
+    height: 100% !important;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 14px;
+}

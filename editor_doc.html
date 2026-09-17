@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RunBoard - Office 文件檢視器</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/editor_common.css">
+    <link rel="stylesheet" href="css/editor_doc.css">
+    
+    <!-- Tabulator (Excel 表格) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.2/css/tabulator_midnight.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.2/js/tabulator.min.js"></script>
+
+    <!-- SheetJS (Excel 解析) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- Mammoth.js (Word 解析) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.5.1/mammoth.browser.min.js"></script>
+
+    <script src="js/nav.js"></script>
+</head>
+<body>
+    <div id="sidebar"></div>
+    <div class="main-content" style="padding: 0;">
+        <div class="smart-editor-container">
+            <!-- 頂部 10% 統一子分頁導覽列 -->
+            <div class="sub-nav-bar">
+                <div class="sub-nav-tabs">
+                    <a href="editor_md.html" class="sub-tab">📝 Markdown 筆記</a>
+                    <a href="editor_csv.html" class="sub-tab">📊 CSV 試算表</a>
+                    <a href="editor_json.html" class="sub-tab">⚙️ JSON 樹狀</a>
+                    <a href="editor_doc.html" class="sub-tab active">📑 Office 檢視</a>
+                    <a href="smart_editor.html" class="sub-tab">🏠 總覽與快開</a>
+                </div>
+            </div>
+
+            <!-- Office 工具列 -->
+            <div class="toolbar">
+                <button id="btn-open" class="btn-tool primary">📂 開啟 Word / Excel 文件</button>
+                <button id="btn-open-search" class="btn-tool">🔍 搜尋/過濾內容</button>
+                <span id="file-name-display" class="file-name">尚未選取文件</span>
+            </div>
+
+            <!-- 主要內容區 (90%) -->
+            <div class="main-viewport">
+                <!-- 空白提示狀態 -->
+                <div id="empty-container" class="view-panel doc-placeholder">
+                    <div class="doc-icon">📑</div>
+                    <h2>尚未選取 Office 文件</h2>
+                    <p>支援 .docx (Word A4 排版預覽) 與 .xlsx (Excel 凍結表頭試算表)</p>
+                    <br>
+                    <button id="btn-open-hero" class="btn-tool primary" style="font-size: 14px; padding: 8px 18px;">📂 選取本機文件</button>
+                </div>
+
+                <!-- Word A4 紙張預覽容器 -->
+                <div id="word-container" class="view-panel doc-viewport" style="display: none;">
+                    <div id="word-paper" class="doc-paper"></div>
+                </div>
+
+                <!-- Excel Tabulator 試算表容器 -->
+                <div id="excel-container" class="view-panel" style="display: none;">
+                    <div id="excel-grid-container"></div>
+                </div>
+            </div>
+
+            <!-- 滑出式搜尋抽屜 -->
+            <div id="search-drawer" class="search-drawer">
+                <div class="drawer-header">
+                    <span class="drawer-title">🔍 文件內容搜尋與過濾</span>
+                    <button id="btn-close-search" class="btn-icon" title="關閉">✕</button>
+                </div>
+                <div class="drawer-body">
+                    <input type="text" id="search-input" class="filter-input" placeholder="輸入關鍵字或 Regex...">
+                    <span id="filter-stats" class="filter-stats">共 0 筆結果</span>
+                    <div id="filter-results" class="filter-results"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="js/editor_doc.js"></script>
+</body>
+</html>

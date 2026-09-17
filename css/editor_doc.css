@@ -1,0 +1,67 @@
+/* css/editor_doc.css - Office 檢視 (Word/Excel) 專屬樣式 */
+
+/* Word A4 擬真紙張容器 */
+.doc-viewport {
+    padding: 30px 15px;
+    background-color: #333333;
+    min-height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+    overflow-y: auto;
+}
+
+.doc-paper {
+    width: 820px;
+    max-width: 100%;
+    min-height: 1100px;
+    background: #ffffff;
+    color: #2b2b2b;
+    padding: 60px 80px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    box-sizing: border-box;
+    font-family: "Calibri", "Segoe UI", "Microsoft JhengHei", sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+.doc-paper h1, .doc-paper h2, .doc-paper h3 {
+    color: #1a365d;
+    margin-top: 1.2em;
+    margin-bottom: 0.5em;
+}
+
+.doc-paper p { margin-bottom: 1em; }
+.doc-paper table { border-collapse: collapse; width: 100%; margin: 1.2em 0; }
+.doc-paper th, .doc-paper td { border: 1px solid #cbd5e0; padding: 8px 12px; }
+.doc-paper th { background-color: #edf2f7; }
+
+/* Excel Tabulator Theme */
+#excel-grid-container {
+    width: 100%;
+    height: 100%;
+    background-color: #1e1e1e;
+}
+
+.tabulator { border: none !important; background-color: #1e1e1e !important; }
+.tabulator-header { background-color: #2d2d2d !important; border-bottom: 2px solid #444 !important; color: #e2e8f0 !important; font-weight: 600 !important; }
+.tabulator-row { background-color: #1e1e1e !important; color: #cbd5e1 !important; border-bottom: 1px solid #2d2d2d !important; }
+.tabulator-row.tabulator-row-even { background-color: #252526 !important; }
+.tabulator-row:hover { background-color: #37373d !important; }
+.tabulator-cell { border-right: 1px solid #2d2d2d !important; padding: 8px 10px !important; }
+
+/* 空白提示區 */
+.doc-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #888;
+    text-align: center;
+}
+
+.doc-placeholder .doc-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+}

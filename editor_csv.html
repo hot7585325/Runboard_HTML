@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RunBoard - CSV 試算表</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/editor_common.css">
+    <link rel="stylesheet" href="css/editor_csv.css">
+    
+    <!-- Tabulator (僅載入表格專用 CDN) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.2/css/tabulator_midnight.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.2/js/tabulator.min.js"></script>
+
+    <script src="js/nav.js"></script>
+</head>
+<body>
+    <div id="sidebar"></div>
+    <div class="main-content" style="padding: 0;">
+        <div class="smart-editor-container">
+            <!-- 頂部 10% 統一子分頁導覽列 -->
+            <div class="sub-nav-bar">
+                <div class="sub-nav-tabs">
+                    <a href="editor_md.html" class="sub-tab">📝 Markdown 筆記</a>
+                    <a href="editor_csv.html" class="sub-tab active">📊 CSV 試算表</a>
+                    <a href="editor_json.html" class="sub-tab">⚙️ JSON 樹狀</a>
+                    <a href="editor_doc.html" class="sub-tab">📑 Office 檢視</a>
+                    <a href="smart_editor.html" class="sub-tab">🏠 總覽與快開</a>
+                </div>
+            </div>
+
+            <!-- CSV 工具列 -->
+            <div class="toolbar">
+                <button id="btn-new" class="btn-tool">➕ 新增試算表</button>
+                <button id="btn-open" class="btn-tool">📂 開啟 CSV</button>
+                <button id="btn-save" class="btn-tool primary">💾 儲存修改</button>
+                <button id="btn-add-row" class="btn-tool">➕ 新增列</button>
+                <button id="btn-add-col" class="btn-tool">➕ 新增欄</button>
+                <button id="btn-toggle-raw" class="btn-tool">📝 切換原始碼</button>
+                <button id="btn-open-search" class="btn-tool">🔍 搜尋/過濾</button>
+                <span id="file-name-display" class="file-name">未命名試算表.csv (尚未存檔)</span>
+            </div>
+
+            <!-- 主要內容區 (90%) -->
+            <div class="main-viewport">
+                <!-- 試算表表格容器 -->
+                <div id="grid-container" class="view-panel"></div>
+                <!-- 原始碼文字框容器 -->
+                <div id="raw-container" class="view-panel" style="display: none;">
+                    <textarea id="raw-csv-textarea" spellcheck="false" placeholder="在此輸入或貼上 CSV 純文字..."></textarea>
+                </div>
+            </div>
+
+            <!-- 滑出式搜尋抽屜 -->
+            <div id="search-drawer" class="search-drawer">
+                <div class="drawer-header">
+                    <span class="drawer-title">🔍 表格即時過濾</span>
+                    <button id="btn-close-search" class="btn-icon" title="關閉">✕</button>
+                </div>
+                <div class="drawer-body">
+                    <input type="text" id="search-input" class="filter-input" placeholder="輸入關鍵字過濾列...">
+                    <span id="filter-stats" class="filter-stats">顯示全部</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="js/editor_csv.js"></script>
+</body>
+</html>

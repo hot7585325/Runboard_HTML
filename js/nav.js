@@ -88,8 +88,13 @@
         const navItems = getNavItems();
         const hasCustomOrder = !!localStorage.getItem(STORAGE_KEY);
 
+        const editorPages = ['smart_editor.html', 'editor_md.html', 'editor_csv.html', 'editor_json.html', 'editor_doc.html'];
+        const isCurrentEditorPage = editorPages.includes(currentPage.toLowerCase());
+
         const navLinksHtml = navItems.map(item => {
-            const isActive = (item.url.toLowerCase() === currentPage.toLowerCase()) ? ' class="active"' : '';
+            const isItemActive = (item.url.toLowerCase() === currentPage.toLowerCase()) || 
+                                 (item.url.toLowerCase() === 'smart_editor.html' && isCurrentEditorPage);
+            const isActive = isItemActive ? ' class="active"' : '';
             return `
             <li class="nav-item" draggable="true" data-url="${item.url}">
                 <a href="${item.url}"${isActive} draggable="false">

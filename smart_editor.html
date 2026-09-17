@@ -3,146 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RunBoard - 通用檔案過濾編輯器</title>
+    <title>RunBoard - 通用檔案編輯器總覽</title>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/smart_editor.css">
-    
-    <!-- CodeMirror (Editor) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/monokai.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/markdown/markdown.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
-
-    <!-- Tabulator (Modern Data Grid for CSV & Excel) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.2/css/tabulator_midnight.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.2/js/tabulator.min.js"></script>
-
-    <!-- JSONEditor (Tree Visualizer & Editor) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.4/jsoneditor.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.4/jsoneditor.min.js"></script>
-
-    <!-- Marked.js (Markdown Preview) -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-    <!-- SheetJS (Excel) -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-    <!-- Mammoth.js (Word) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.5.1/mammoth.browser.min.js"></script>
-
+    <link rel="stylesheet" href="css/editor_common.css">
     <script src="js/nav.js"></script>
 </head>
 <body>
     <div id="sidebar"></div>
     <div class="main-content" style="padding: 0;">
-        
-        <!-- 首頁歡迎/尚未選取檔案狀態 -->
-        <div id="no-data-msg" class="empty-state" style="margin-top: 60px;">
-            <h2>RunBoard 智慧檔案編輯器</h2>
-            <p>可直接開啟電腦中的檔案，或從空白範本新建檔案</p>
-            
-            <div style="margin: 25px 0;">
-                <button id="btn-initial-open" class="btn primary" style="font-size: 14px; padding: 8px 20px;">📂 選取本機現有檔案</button>
-            </div>
-
-            <div class="new-file-section">
-                <div class="new-file-title">或直接建立新檔案：</div>
-                <div class="new-file-cards">
-                    <button class="new-card-btn" data-create="md">
-                        <span class="card-icon">📝</span>
-                        <span class="card-label">Markdown 筆記 (.md)</span>
-                    </button>
-                    <button class="new-card-btn" data-create="csv">
-                        <span class="card-icon">📊</span>
-                        <span class="card-label">試算表資料 (.csv)</span>
-                    </button>
-                    <button class="new-card-btn" data-create="json">
-                        <span class="card-icon">⚙️</span>
-                        <span class="card-label">結構化資料 (.json)</span>
-                    </button>
-                    <button class="new-card-btn" data-create="txt">
-                        <span class="card-icon">📄</span>
-                        <span class="card-label">純文字檔案 (.txt)</span>
-                    </button>
+        <div class="smart-editor-container">
+            <!-- 頂部 10% 統一子分頁導覽列 -->
+            <div class="sub-nav-bar">
+                <div class="sub-nav-tabs">
+                    <a href="editor_md.html" class="sub-tab">📝 Markdown 筆記</a>
+                    <a href="editor_csv.html" class="sub-tab">📊 CSV 試算表</a>
+                    <a href="editor_json.html" class="sub-tab">⚙️ JSON 樹狀</a>
+                    <a href="editor_doc.html" class="sub-tab">📑 Office 檢視</a>
+                    <a href="smart_editor.html" class="sub-tab active">🏠 總覽與快開</a>
                 </div>
             </div>
-        </div>
 
-        <!-- 編輯器核心容器 -->
-        <div id="app-container" style="display: none; height: 100%;">
-            <div class="smart-editor-container">
-                <!-- 頂部工具列 -->
-                <div class="toolbar">
-                    <div class="dropdown-wrapper">
-                        <button id="btn-new-menu" class="btn-tool">➕ 新增檔案 ▾</button>
-                        <div id="dropdown-new-content" class="dropdown-menu">
-                            <a href="javascript:void(0)" data-create="md">📝 Markdown 筆記 (.md)</a>
-                            <a href="javascript:void(0)" data-create="csv">📊 試算表 (.csv)</a>
-                            <a href="javascript:void(0)" data-create="json">⚙️ JSON 資料 (.json)</a>
-                            <a href="javascript:void(0)" data-create="txt">📄 純文字檔 (.txt)</a>
-                        </div>
-                    </div>
-                    <button id="btn-open" class="btn-tool">📂 開啟檔案</button>
-                    <button id="btn-save" class="btn-tool primary" style="display: none;">💾 儲存修改</button>
-                    <button id="btn-toggle-preview" class="btn-tool" style="display: none;">👁️ 切換預覽</button>
-                    <button id="btn-toggle-csv-raw" class="btn-tool" style="display: none;">🔄 切換原始碼/表格</button>
-                    <button id="btn-csv-add-row" class="btn-tool" style="display: none;">➕ 新增列</button>
-                    <button id="btn-csv-add-col" class="btn-tool" style="display: none;">➕ 新增欄</button>
-                    <button id="btn-toggle-json-raw" class="btn-tool" style="display: none;">🔄 切換原始碼/樹狀</button>
-                    <button id="btn-open-search" class="btn-tool">🔍 搜尋/過濾</button>
-                    <span id="file-name-display" class="file-name"></span>
-                </div>
-
-                <!-- 主要內容呈現區 (100% 滿版) -->
-                <div class="main-viewport">
-                    <!-- 1. 純文字 / 程式碼 CodeMirror 容器 -->
-                    <div id="single-editor-container" class="view-panel" style="display: none;">
-                        <div id="editor-container"></div>
+            <!-- 主畫面總覽儀表板 -->
+            <div class="main-viewport" style="overflow-y: auto;">
+                <div class="dashboard-container">
+                    <div class="dashboard-hero">
+                        <h1>✨ RunBoard 智慧編輯器總覽</h1>
+                        <p>每個格式皆已模組化分離，提供最流暢、原生且無負擔的專屬編輯體驗</p>
                     </div>
 
-                    <!-- 2. Markdown 專用可拖拉雙欄容器 -->
-                    <div id="split-container" class="split-view-container" style="display: none;">
-                        <div id="split-left" class="split-pane">
-                            <div id="md-editor-container"></div>
-                        </div>
-                        <div id="split-resizer" class="split-resizer" title="左右拖拉調整比例"></div>
-                        <div id="split-right" class="split-pane">
-                            <div id="md-preview-paper" class="md-preview-body"></div>
-                        </div>
+                    <!-- 4 大格式專屬入口卡片 -->
+                    <div class="dashboard-cards">
+                        <a href="editor_md.html" class="dashboard-card">
+                            <span class="card-icon">📝</span>
+                            <span class="card-title">Markdown 筆記</span>
+                            <span class="card-desc">支援左右雙欄拖拉、即時語法渲染與大綱過濾</span>
+                        </a>
+
+                        <a href="editor_csv.html" class="dashboard-card">
+                            <span class="card-icon">📊</span>
+                            <span class="card-title">CSV 試算表</span>
+                            <span class="card-desc">動態增刪欄列、雙擊重命名表頭、右鍵選單與存檔</span>
+                        </a>
+
+                        <a href="editor_json.html" class="dashboard-card">
+                            <span class="card-icon">⚙️</span>
+                            <span class="card-title">JSON 結構編輯</span>
+                            <span class="card-desc">視覺化樹狀節點展開折疊、一鍵格式化排版與代碼切換</span>
+                        </a>
+
+                        <a href="editor_doc.html" class="dashboard-card">
+                            <span class="card-icon">📑</span>
+                            <span class="card-title">Office 文件檢視</span>
+                            <span class="card-desc">Word A4 擬真印刷紙張與 Excel 凍結表頭試算表</span>
+                        </a>
                     </div>
 
-                    <!-- 3. Word 專屬 A4 紙張預覽容器 -->
-                    <div id="word-container" class="view-panel doc-viewport" style="display: none;">
-                        <div id="word-paper" class="doc-paper"></div>
-                    </div>
-
-                    <!-- 4. Tabulator 表格容器 (CSV & Excel) -->
-                    <div id="grid-container" class="view-panel" style="display: none; height: 100%;"></div>
-
-                    <!-- 5. JSON 專屬樹狀視覺化編輯器容器 -->
-                    <div id="json-tree-container" class="view-panel" style="display: none; height: 100%;"></div>
-                </div>
-
-                <!-- 抽屜式/滑出式搜尋面板 -->
-                <div id="search-drawer" class="search-drawer">
-                    <div class="drawer-header">
-                        <span class="drawer-title">🔍 搜尋與過濾</span>
-                        <button id="btn-close-search" class="btn-icon" title="關閉">✕</button>
-                    </div>
-                    <div class="drawer-body">
-                        <input type="text" id="search-input" class="filter-input" placeholder="輸入關鍵字或 Regex...">
-                        <span id="filter-stats" class="filter-stats">共 0 筆結果</span>
-                        <div id="filter-results" class="filter-results">
-                            <!-- 搜尋結果項目 -->
-                        </div>
+                    <!-- 智慧隨選快開中樞 -->
+                    <div class="dashboard-quick-open">
+                        <h3 style="color: #fff; margin-bottom: 8px;">📂 智慧選取本機檔案</h3>
+                        <p style="color: #888; font-size: 13px; margin-bottom: 20px;">
+                            不確定該用哪一個工具？點擊下方按鈕選取任意檔案，系統將自動為你導向至最佳的專屬編輯器！
+                        </p>
+                        <button id="btn-smart-open" class="btn-tool primary" style="font-size: 14px; padding: 10px 24px; margin: 0 auto;">
+                            ⚡ 智慧開啟檔案...
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
-
     </div>
+
     <script src="js/smart_editor.js"></script>
 </body>
 </html>
