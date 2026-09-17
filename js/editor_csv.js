@@ -13,6 +13,7 @@
         rawTextarea: document.getElementById('raw-csv-textarea'),
         fileNameDisplay: document.getElementById('file-name-display'),
         btnNew: document.getElementById('btn-new'),
+        btnLoadTemplate: document.getElementById('btn-load-template'),
         btnOpen: document.getElementById('btn-open'),
         btnSave: document.getElementById('btn-save'),
         btnAddRow: document.getElementById('btn-add-row'),
@@ -25,6 +26,7 @@
         filterStats: document.getElementById('filter-stats')
     };
 
+    const BLANK_TEMPLATE = '欄位 1,欄位 2,欄位 3\n,,';
     const DEFAULT_TEMPLATE = '名稱,數量,單價,備註\n蘋果,10,25,新鮮到貨\n香蕉,5,15,特價中\n橘子,8,30,甜度高\n';
 
     // --- CSV 解析器 ---
@@ -234,10 +236,28 @@
         }
     }
 
-    // --- 建立全新 CSV ---
+    // --- 建立全新空白 CSV ---
     function createNew() {
         currentHandle = null;
         ui.fileNameDisplay.textContent = '⚡ 未命名試算表.csv (尚未存檔)';
+        isTableView = true;
+        ui.rawContainer.style.display = 'none';
+        ui.gridContainer.style.display = 'block';
+        ui.btnAddRow.style.display = 'inline-flex';
+        ui.btnAddCol.style.display = 'inline-flex';
+        ui.btnToggleRaw.innerHTML = '📝 切換原始碼';
+        renderCsvToTabulator(BLANK_TEMPLATE);
+    }
+
+    // --- 載入範本 ---
+    function loadTemplate() {
+        if (ui.rawTextarea.value.trim() !== '' && ui.rawTextarea.value.trim() !== BLANK_TEMPLATE.trim()) {
+            if (!confirm('載入範本將覆蓋目前編輯的試算表，確定要繼續嗎？')) {
+                return;
+            }
+        }
+        currentHandle = null;
+        ui.fileNameDisplay.textContent = '⚡ 範本試算表.csv (尚未存檔)';
         isTableView = true;
         ui.rawContainer.style.display = 'none';
         ui.gridContainer.style.display = 'block';
@@ -332,6 +352,7 @@
 
     // --- 事件監聽 ---
     ui.btnNew.addEventListener('click', createNew);
+    if (ui.btnLoadTemplate) ui.btnLoadTemplate.addEventListener('click', loadTemplate);
     ui.btnOpen.addEventListener('click', openFile);
     ui.btnSave.addEventListener('click', saveFile);
     ui.btnAddRow.addEventListener('click', addRow);

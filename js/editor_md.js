@@ -17,6 +17,7 @@
         splitRight: document.getElementById('split-right'),
         fileNameDisplay: document.getElementById('file-name-display'),
         btnNew: document.getElementById('btn-new'),
+        btnLoadTemplate: document.getElementById('btn-load-template'),
         btnOpen: document.getElementById('btn-open'),
         btnSave: document.getElementById('btn-save'),
         btnToggleView: document.getElementById('btn-toggle-view'),
@@ -53,10 +54,20 @@
         setTimeout(() => editor.refresh(), 50);
     }
 
-    // --- 建立全新筆記 ---
+    // --- 建立全新空白筆記 ---
     function createNew() {
         currentHandle = null;
         ui.fileNameDisplay.textContent = '⚡ 未命名筆記.md (尚未存檔)';
+        initEditor('');
+    }
+
+    // --- 載入範本 ---
+    function loadTemplate() {
+        if (editor && editor.getValue().trim() !== '') {
+            if (!confirm('載入範本將覆蓋目前編輯的內容，確定要繼續嗎？')) {
+                return;
+            }
+        }
         initEditor(DEFAULT_TEMPLATE);
     }
 
@@ -228,6 +239,7 @@
 
     // --- 事件綁定 ---
     ui.btnNew.addEventListener('click', createNew);
+    if (ui.btnLoadTemplate) ui.btnLoadTemplate.addEventListener('click', loadTemplate);
     ui.btnOpen.addEventListener('click', openFile);
     ui.btnSave.addEventListener('click', saveFile);
     ui.btnToggleView.addEventListener('click', toggleView);

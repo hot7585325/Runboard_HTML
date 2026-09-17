@@ -14,6 +14,7 @@
         rawContainer: document.getElementById('raw-json-container'),
         fileNameDisplay: document.getElementById('file-name-display'),
         btnNew: document.getElementById('btn-new'),
+        btnLoadTemplate: document.getElementById('btn-load-template'),
         btnOpen: document.getElementById('btn-open'),
         btnSave: document.getElementById('btn-save'),
         btnToggleRaw: document.getElementById('btn-toggle-raw'),
@@ -85,10 +86,26 @@
         runFilter('');
     }
 
-    // --- 建立全新 JSON ---
+    // --- 建立全新空白 JSON ---
     function createNew() {
         currentHandle = null;
         ui.fileNameDisplay.textContent = '⚡ 未命名資料.json (尚未存檔)';
+        isTreeView = true;
+        ui.rawContainer.style.display = 'none';
+        ui.treeContainer.style.display = 'block';
+        ui.btnToggleRaw.innerHTML = '📝 切換原始碼';
+        loadJson({});
+    }
+
+    // --- 載入範本 ---
+    function loadTemplate() {
+        if (codeMirrorEditor && codeMirrorEditor.getValue().trim() !== '' && codeMirrorEditor.getValue().trim() !== '{}') {
+            if (!confirm('載入範本將覆蓋目前編輯的資料，確定要繼續嗎？')) {
+                return;
+            }
+        }
+        currentHandle = null;
+        ui.fileNameDisplay.textContent = '⚡ 範本資料.json (尚未存檔)';
         isTreeView = true;
         ui.rawContainer.style.display = 'none';
         ui.treeContainer.style.display = 'block';
@@ -296,6 +313,7 @@
 
     // --- 事件監聽 ---
     ui.btnNew.addEventListener('click', createNew);
+    if (ui.btnLoadTemplate) ui.btnLoadTemplate.addEventListener('click', loadTemplate);
     ui.btnOpen.addEventListener('click', openFile);
     ui.btnSave.addEventListener('click', saveFile);
     ui.btnToggleRaw.addEventListener('click', toggleRawView);
