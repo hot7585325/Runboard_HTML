@@ -1,4 +1,4 @@
-/* css/editor_json.css - JSON 樹狀結構專屬樣式 */
+/* css/editor_json.css - JSON 樹狀結構專屬深色樣式 */
 
 #json-tree-container {
     width: 100%;
@@ -6,13 +6,103 @@
     background-color: #1e1e1e;
 }
 
+/* JSONEditor 深色主題全面覆寫 */
 .jsoneditor {
     border: none !important;
+    background-color: #1e1e1e !important;
+    color: #d4d4d4 !important;
 }
 
 .jsoneditor-menu {
     background-color: #2d2d2d !important;
     border-bottom: 1px solid #444 !important;
+}
+
+.jsoneditor-menu button {
+    filter: invert(1) brightness(0.8);
+}
+
+.jsoneditor-menu button:hover {
+    background-color: #444 !important;
+}
+
+.jsoneditor-navigation-bar {
+    background-color: #252526 !important;
+    border-bottom: 1px solid #333 !important;
+    color: #aaa !important;
+}
+
+div.jsoneditor-outer {
+    background-color: #1e1e1e !important;
+}
+
+div.jsoneditor-tree {
+    background-color: #1e1e1e !important;
+    color: #d4d4d4 !important;
+}
+
+table.jsoneditor-tree {
+    background-color: #1e1e1e !important;
+}
+
+/* 鍵名 (Key) 深色風格 */
+.jsoneditor-field {
+    color: #9cdcfe !important;
+}
+
+.jsoneditor-field:hover, .jsoneditor-field:focus {
+    color: #4fc1ff !important;
+    background-color: #2a2d2e !important;
+}
+
+/* 數值 (Value) 各類型深色語法色彩 */
+.jsoneditor-value {
+    color: #ce9178 !important;
+}
+
+.jsoneditor-value.jsoneditor-string {
+    color: #ce9178 !important; /* 橘粉色字串 */
+}
+
+.jsoneditor-value.jsoneditor-number {
+    color: #b5cea8 !important; /* 淺綠色數字 */
+}
+
+.jsoneditor-value.jsoneditor-boolean {
+    color: #569cd6 !important; /* 藍色布林值 */
+}
+
+.jsoneditor-value.jsoneditor-null {
+    color: #569cd6 !important; /* 藍色 null */
+}
+
+.jsoneditor-value:hover, .jsoneditor-value:focus {
+    background-color: #2a2d2e !important;
+}
+
+.jsoneditor-readonly {
+    color: #888 !important;
+}
+
+/* 樹狀列 Hover */
+.jsoneditor-tree tr:hover {
+    background-color: #252526 !important;
+}
+
+/* 右鍵選單 / 浮動選單深色化 */
+.jsoneditor-contextmenu .jsoneditor-menu {
+    background-color: #2d2d2d !important;
+    border: 1px solid #444 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+}
+
+.jsoneditor-contextmenu ul li button {
+    color: #e2e8f0 !important;
+}
+
+.jsoneditor-contextmenu ul li button:hover {
+    background-color: #007acc !important;
+    color: #fff !important;
 }
 
 #raw-json-container {
