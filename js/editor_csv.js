@@ -3,9 +3,11 @@
  * 獨立模組：負責 Tabulator 渲染、動態欄列增刪、表頭編輯、雙向同步與 RFC 4180 CSV 存取
  */
 (function () {
+    const DRAFT_KEY = 'runboard_draft_csv';
     let currentHandle = null;
     let tabulatorTable = null;
     let isTableView = true;
+    let isDirty = false;
 
     const ui = {
         gridContainer: document.getElementById('grid-container'),
@@ -162,7 +164,16 @@
             }).join(',');
         });
 
-        ui.rawTextarea.value = [headerRow, ...dataRows].join('\n');
+        const newCsv = [headerRow, ...dataRows].join('\n');
+        ui.rawTextarea.value = newCsv;
+
+        if (newCsv.trim() !== '' && newCsv.trim() !== BLANK_TEMPLATE.trim()) {
+            isDirty = true;
+            localStorage.setItem(DRAFT_KEY, newCsv);
+        } else {
+            isDirty = false;
+            localStorage.removeItem(DRAFT_KEY);
+        }
     }
 
     // --- 新增列與新增欄 ---
@@ -239,6 +250,8 @@
     // --- 建立全新空白 CSV ---
     function createNew() {
         currentHandle = null;
+        isDirty = false;
+        localStorage.removeItem(DRAFT_KEY);
         ui.fileNameDisplay.textContent = '⚡ 未命名試算表.csv (尚未存檔)';
         isTableView = true;
         ui.rawContainer.style.display = 'none';
@@ -311,6 +324,9 @@
             await writable.write(ui.rawTextarea.value);
             await writable.close();
 
+            isDirty = false;
+            localStorage.removeItem(DRAFT_KEY);
+
             const origText = ui.btnSave.innerHTML;
             ui.btnSave.innerHTML = '✅ 已儲存';
             setTimeout(() => ui.btnSave.innerHTML = origText, 2000);
@@ -359,6 +375,18 @@
     ui.btnAddCol.addEventListener('click', addCol);
     ui.btnToggleRaw.addEventListener('click', toggleRawView);
 
+    // 原始碼文字框輸入時自動更新草稿
+    ui.rawTextarea.addEventListener('input', () => {
+        const val = ui.rawTextarea.value;
+        if (val.trim() !== '' && val.trim() !== BLANK_TEMPLATE.trim()) {
+            isDirty = true;
+            localStorage.setItem(DRAFT_KEY, val);
+        } else {
+            isDirty = false;
+            localStorage.removeItem(DRAFT_KEY);
+        }
+    });
+
     ui.btnOpenSearch.addEventListener('click', () => toggleSearchDrawer(true));
     ui.btnCloseSearch.addEventListener('click', () => toggleSearchDrawer(false));
     ui.searchInput.addEventListener('input', (e) => runFilter(e.target.value));
@@ -375,6 +403,33 @@
         }
     });
 
-    // 初始化載入範本
-    createNew();
+    // --- 離開頁面防呆警告 ---
+    window.addEventListener('beforeunload', (e) => {
+        if (isDirty) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('a[href]');
+        if (link && isDirty) {
+            const href = link.getAttribute('href');
+            if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
+                if (!confirm('⚠️ 您有尚未儲存的試算表修改！確定要離開此頁面嗎？\n（未儲存的內容已暫存為草稿，但尚未寫入實體檔案）')) {
+                    e.preventDefault();
+                }
+            }
+        }
+    });
+
+    // --- 初始化：檢查並還原草稿 ---
+    const savedDraft = localStorage.getItem(DRAFT_KEY);
+    if (savedDraft && savedDraft.trim() !== '' && savedDraft.trim() !== BLANK_TEMPLATE.trim()) {
+        renderCsvToTabulator(savedDraft);
+        ui.fileNameDisplay.textContent = '⚡ 未命名試算表.csv (已自動還原草稿)';
+        isDirty = true;
+    } else {
+        createNew();
+    }
 })();

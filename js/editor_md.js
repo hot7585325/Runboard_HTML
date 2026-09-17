@@ -3,10 +3,12 @@
  * 獨立模組：負責 CodeMirror Markdown 模式、雙欄拖拉 Resizer、Marked.js 即時渲染與行號跳轉
  */
 (function () {
+    const DRAFT_KEY = 'runboard_draft_md';
     let currentHandle = null;
     let editor = null;
     let rawTextLines = [];
     let isSplitView = true;
+    let isDirty = false;
 
     const ui = {
         mdEditorContainer: document.getElementById('md-editor-container'),
@@ -47,6 +49,15 @@
             ui.mdPreviewPaper.innerHTML = marked.parse(val);
             rawTextLines = val.split('\n');
             runFilter(ui.searchInput.value);
+
+            // 自動暫存草稿與標記修改狀態
+            if (val.trim() !== '') {
+                isDirty = true;
+                localStorage.setItem(DRAFT_KEY, val);
+            } else {
+                isDirty = false;
+                localStorage.removeItem(DRAFT_KEY);
+            }
         });
 
         ui.mdPreviewPaper.innerHTML = marked.parse(text);
@@ -57,6 +68,8 @@
     // --- 建立全新空白筆記 ---
     function createNew() {
         currentHandle = null;
+        isDirty = false;
+        localStorage.removeItem(DRAFT_KEY);
         ui.fileNameDisplay.textContent = '⚡ 未命名筆記.md (尚未存檔)';
         initEditor('');
     }
@@ -68,6 +81,8 @@
                 return;
             }
         }
+        currentHandle = null;
+        ui.fileNameDisplay.textContent = '⚡ 範本筆記.md (尚未存檔)';
         initEditor(DEFAULT_TEMPLATE);
     }
 
@@ -111,6 +126,9 @@
             const writable = await currentHandle.createWritable();
             await writable.write(editor.getValue());
             await writable.close();
+
+            isDirty = false;
+            localStorage.removeItem(DRAFT_KEY);
 
             const origText = ui.btnSave.innerHTML;
             ui.btnSave.innerHTML = '✅ 已儲存';
@@ -260,6 +278,33 @@
         }
     });
 
-    // 初始化
-    createNew();
+    // --- 離開頁面防呆警告 ---
+    window.addEventListener('beforeunload', (e) => {
+        if (isDirty) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('a[href]');
+        if (link && isDirty) {
+            const href = link.getAttribute('href');
+            if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
+                if (!confirm('⚠️ 您有尚未儲存的筆記修改！確定要離開此頁面嗎？\n（未儲存的內容已暫存為草稿，但尚未寫入實體檔案）')) {
+                    e.preventDefault();
+                }
+            }
+        }
+    });
+
+    // --- 初始化：檢查並還原草稿 ---
+    const savedDraft = localStorage.getItem(DRAFT_KEY);
+    if (savedDraft && savedDraft.trim() !== '') {
+        initEditor(savedDraft);
+        ui.fileNameDisplay.textContent = '⚡ 未命名筆記.md (已自動還原草稿)';
+        isDirty = true;
+    } else {
+        createNew();
+    }
 })();

@@ -3,11 +3,14 @@
  * 獨立模組：負責 JSONEditor 樹狀視覺化節點、CodeMirror JSON 代碼切換、格式化與儲存
  */
 (function () {
+    const DRAFT_KEY = 'runboard_draft_json';
     let currentHandle = null;
     let jsonEditor = null;
     let codeMirrorEditor = null;
     let isTreeView = true;
     let rawTextLines = [];
+    let isDirty = false;
+    let isProgrammaticChange = false;
 
     const ui = {
         treeContainer: document.getElementById('json-tree-container'),
@@ -45,10 +48,32 @@
         const options = {
             mode: 'tree',
             modes: ['tree', 'view'],
+            onChange: function () {
+                try {
+                    const val = jsonEditor.get();
+                    const jsonString = JSON.stringify(val, null, 2);
+                    if (codeMirrorEditor) {
+                        isProgrammaticChange = true;
+                        codeMirrorEditor.setValue(jsonString);
+                        isProgrammaticChange = false;
+                        rawTextLines = jsonString.split('\n');
+                    }
+                    if (jsonString.trim() !== '' && jsonString.trim() !== '{}') {
+                        isDirty = true;
+                        localStorage.setItem(DRAFT_KEY, jsonString);
+                    }
+                } catch (e) {}
+            },
             onChangeText: function (jsonString) {
                 if (codeMirrorEditor) {
+                    isProgrammaticChange = true;
                     codeMirrorEditor.setValue(jsonString);
+                    isProgrammaticChange = false;
                     rawTextLines = jsonString.split('\n');
+                }
+                if (jsonString.trim() !== '' && jsonString.trim() !== '{}') {
+                    isDirty = true;
+                    localStorage.setItem(DRAFT_KEY, jsonString);
                 }
             }
         };
@@ -71,6 +96,16 @@
             const val = codeMirrorEditor.getValue();
             rawTextLines = val.split('\n');
             runFilter(ui.searchInput.value);
+
+            if (!isProgrammaticChange) {
+                if (val.trim() !== '' && val.trim() !== '{}') {
+                    isDirty = true;
+                    localStorage.setItem(DRAFT_KEY, val);
+                } else {
+                    isDirty = false;
+                    localStorage.removeItem(DRAFT_KEY);
+                }
+            }
         });
 
         rawTextLines = text.split('\n');
@@ -94,6 +129,8 @@
         ui.rawContainer.style.display = 'none';
         ui.treeContainer.style.display = 'block';
         ui.btnToggleRaw.innerHTML = '📝 切換原始碼';
+        isDirty = false;
+        localStorage.removeItem(DRAFT_KEY);
         loadJson({});
     }
 
@@ -111,6 +148,9 @@
         ui.treeContainer.style.display = 'block';
         ui.btnToggleRaw.innerHTML = '📝 切換原始碼';
         loadJson(DEFAULT_TEMPLATE);
+        const tplStr = JSON.stringify(DEFAULT_TEMPLATE, null, 2);
+        isDirty = true;
+        localStorage.setItem(DRAFT_KEY, tplStr);
     }
 
     // --- 開啟本機檔案 ---
@@ -130,10 +170,14 @@
                 try {
                     const parsed = JSON.parse(text);
                     loadJson(parsed, text);
+                    isDirty = false;
+                    localStorage.removeItem(DRAFT_KEY);
                 } catch (err) {
                     alert('注意：此檔案非標準 JSON 格式，將以純代碼模式開啟。');
                     initCodeMirror(text);
                     switchToRawView();
+                    isDirty = false;
+                    localStorage.removeItem(DRAFT_KEY);
                 }
             }
         } catch (e) {
@@ -225,6 +269,9 @@
             const writable = await currentHandle.createWritable();
             await writable.write(contentToSave);
             await writable.close();
+
+            isDirty = false;
+            localStorage.removeItem(DRAFT_KEY);
 
             const origText = ui.btnSave.innerHTML;
             ui.btnSave.innerHTML = '✅ 已儲存';
@@ -335,6 +382,38 @@
         }
     });
 
-    // 初始化
-    createNew();
+    // --- 離開頁面防呆警告 ---
+    window.addEventListener('beforeunload', (e) => {
+        if (isDirty) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('a[href]');
+        if (link && isDirty) {
+            const href = link.getAttribute('href');
+            if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
+                if (!confirm('⚠️ 您有尚未儲存的 JSON 資料修改！確定要離開此頁面嗎？\n（未儲存的內容已暫存為草稿，但尚未寫入實體檔案）')) {
+                    e.preventDefault();
+                }
+            }
+        }
+    });
+
+    // --- 初始化：檢查並還原草稿 ---
+    const savedDraft = localStorage.getItem(DRAFT_KEY);
+    if (savedDraft && savedDraft.trim() !== '' && savedDraft.trim() !== '{}') {
+        try {
+            const parsed = JSON.parse(savedDraft);
+            loadJson(parsed, savedDraft);
+            ui.fileNameDisplay.textContent = '⚡ 未命名資料.json (已自動還原草稿)';
+            isDirty = true;
+        } catch (e) {
+            createNew();
+        }
+    } else {
+        createNew();
+    }
 })();
