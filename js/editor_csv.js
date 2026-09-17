@@ -20,6 +20,7 @@
         btnSave: document.getElementById('btn-save'),
         btnAddRow: document.getElementById('btn-add-row'),
         btnAddCol: document.getElementById('btn-add-col'),
+        btnToggleFilter: document.getElementById('btn-toggle-filter'),
         btnToggleRaw: document.getElementById('btn-toggle-raw'),
         btnOpenSearch: document.getElementById('btn-open-search'),
         btnCloseSearch: document.getElementById('btn-close-search'),
@@ -30,6 +31,223 @@
 
     const BLANK_TEMPLATE = '欄位 1,欄位 2,欄位 3\n,,';
     const DEFAULT_TEMPLATE = '名稱,數量,單價,備註\n蘋果,10,25,新鮮到貨\n香蕉,5,15,特價中\n橘子,8,30,甜度高\n';
+
+    let isFilterVisible = false;
+    let activeCell = null;
+    const fillHandleEl = document.createElement('div');
+    fillHandleEl.className = 'cell-fill-handle';
+    fillHandleEl.title = '向下拖曳填滿（數字將自動遞增，按住 Ctrl 強制同值）';
+
+    // --- 儲存格選取與掛載 Fill Handle ---
+    function attachFillHandle(cell) {
+        if (!cell) return;
+        if (activeCell && activeCell !== cell) {
+            try {
+                activeCell.getElement().classList.remove('active-cell');
+            } catch (e) {}
+        }
+        activeCell = cell;
+        try {
+            const cellEl = cell.getElement();
+            cellEl.classList.add('active-cell');
+            if (fillHandleEl.parentNode !== cellEl) {
+                cellEl.appendChild(fillHandleEl);
+            }
+        } catch (e) {}
+    }
+
+    // --- Fill Handle 滑鼠拖拉互動 ---
+    let isDraggingFill = false;
+    let dragStartRowIdx = -1;
+    let dragCurrentRowIdx = -1;
+    let dragField = '';
+    let dragBaseValue = '';
+    let dragRows = [];
+
+    fillHandleEl.addEventListener('mousedown', function (e) {
+        if (!activeCell || !tabulatorTable) return;
+        e.stopPropagation();
+        e.preventDefault();
+
+        isDraggingFill = true;
+        dragRows = tabulatorTable.getRows();
+        const startRow = activeCell.getRow();
+        dragStartRowIdx = dragRows.indexOf(startRow);
+        dragCurrentRowIdx = dragStartRowIdx;
+        dragField = activeCell.getField();
+        dragBaseValue = activeCell.getValue() !== undefined && activeCell.getValue() !== null ? String(activeCell.getValue()) : '';
+
+        document.addEventListener('mousemove', onDragMouseMove);
+        document.addEventListener('mouseup', onDragMouseUp);
+    });
+
+    function onDragMouseMove(e) {
+        if (!isDraggingFill) return;
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        if (!el) return;
+        const rowEl = el.closest('.tabulator-row');
+        if (!rowEl) return;
+
+        const targetRow = tabulatorTable.getRow(rowEl);
+        if (!targetRow) return;
+        const targetIdx = dragRows.indexOf(targetRow);
+        if (targetIdx === -1) return;
+
+        const newHoverIdx = Math.max(dragStartRowIdx, targetIdx);
+        if (newHoverIdx !== dragCurrentRowIdx) {
+            dragCurrentRowIdx = newHoverIdx;
+            updateDragHighlight();
+        }
+    }
+
+    function updateDragHighlight() {
+        document.querySelectorAll('.fill-target-highlight, .fill-target-bottom').forEach(el => {
+            el.classList.remove('fill-target-highlight', 'fill-target-bottom');
+        });
+
+        for (let i = dragStartRowIdx; i <= dragCurrentRowIdx; i++) {
+            const r = dragRows[i];
+            if (r) {
+                const c = r.getCell(dragField);
+                if (c) {
+                    const el = c.getElement();
+                    el.classList.add('fill-target-highlight');
+                    if (i === dragCurrentRowIdx) {
+                        el.classList.add('fill-target-bottom');
+                    }
+                }
+            }
+        }
+    }
+
+    function onDragMouseUp(e) {
+        if (!isDraggingFill) return;
+        isDraggingFill = false;
+        document.removeEventListener('mousemove', onDragMouseMove);
+        document.removeEventListener('mouseup', onDragMouseUp);
+
+        document.querySelectorAll('.fill-target-highlight, .fill-target-bottom').forEach(el => {
+            el.classList.remove('fill-target-highlight', 'fill-target-bottom');
+        });
+
+        if (dragCurrentRowIdx > dragStartRowIdx) {
+            const isHoldingCtrl = e.ctrlKey || e.metaKey;
+            const numMatch = dragBaseValue.match(/^(.*?)(\d+)$/);
+            const prefix = numMatch ? numMatch[1] : '';
+            const baseNum = numMatch ? parseInt(numMatch[2], 10) : 0;
+            const numLen = numMatch ? numMatch[2].length : 0;
+
+            const shouldIncrement = numMatch && !isHoldingCtrl;
+
+            for (let i = dragStartRowIdx + 1; i <= dragCurrentRowIdx; i++) {
+                const r = dragRows[i];
+                let newVal = dragBaseValue;
+                if (shouldIncrement) {
+                    const offset = i - dragStartRowIdx;
+                    const nextNum = baseNum + offset;
+                    newVal = prefix + String(nextNum).padStart(numLen, '0');
+                }
+                r.update({ [dragField]: newVal });
+            }
+            syncToTextarea();
+
+            const lastRow = dragRows[dragCurrentRowIdx];
+            if (lastRow) {
+                const lastCell = lastRow.getCell(dragField);
+                if (lastCell) attachFillHandle(lastCell);
+            }
+        }
+    }
+
+    // --- 一鍵向下填滿直欄 (快捷右鍵選單) ---
+    function fillDownColumn(cell, isIncrement) {
+        if (!tabulatorTable || !cell) return;
+        const currentVal = cell.getValue() !== undefined && cell.getValue() !== null ? String(cell.getValue()) : '';
+        const field = cell.getField();
+        const startRow = cell.getRow();
+        const allRows = tabulatorTable.getRows();
+        const startIdx = allRows.indexOf(startRow);
+        if (startIdx === -1 || startIdx >= allRows.length - 1) return;
+
+        let numMatch = null;
+        let prefix = '';
+        let baseNum = 0;
+        let numLen = 0;
+        if (isIncrement) {
+            numMatch = currentVal.match(/^(.*?)(\d+)$/);
+            if (numMatch) {
+                prefix = numMatch[1];
+                baseNum = parseInt(numMatch[2], 10);
+                numLen = numMatch[2].length;
+            }
+        }
+
+        for (let i = startIdx + 1; i < allRows.length; i++) {
+            const row = allRows[i];
+            let newVal = currentVal;
+            if (isIncrement && numMatch) {
+                const offset = i - startIdx;
+                const nextNum = baseNum + offset;
+                newVal = prefix + String(nextNum).padStart(numLen, '0');
+            }
+            row.update({ [field]: newVal });
+        }
+        syncToTextarea();
+        const lastRow = allRows[allRows.length - 1];
+        if (lastRow) {
+            const lastCell = lastRow.getCell(field);
+            if (lastCell) attachFillHandle(lastCell);
+        }
+    }
+
+    // --- 建立符合 Excel 規範之欄位定義 ---
+    function createColumnDef(title, field) {
+        return {
+            title: String(title),
+            field: field,
+            headerSort: true,
+            headerFilter: "input",
+            headerFilterPlaceholder: "🔍 篩選...",
+            headerFilterLiveFilter: true,
+            editor: "input",
+            editableTitle: true,
+            resizable: true,
+            headerContextMenu: [
+                {
+                    label: "🗑️ 刪除此欄",
+                    action: function (e, column) {
+                        const def = column.getDefinition();
+                        const colTitle = def.title || '此欄';
+                        if (confirm(`確定要刪除「${colTitle}」欄位嗎？`)) {
+                            column.delete();
+                            syncToTextarea();
+                        }
+                    }
+                }
+            ],
+            cellContextMenu: [
+                {
+                    label: "⬇️ 向下填滿相同內容 (至最後一列)",
+                    action: function (e, cell) {
+                        fillDownColumn(cell, false);
+                    }
+                },
+                {
+                    label: "🔢 向下自動遞增填滿 (+1, +2...)",
+                    action: function (e, cell) {
+                        fillDownColumn(cell, true);
+                    }
+                },
+                {
+                    label: "🗑️ 清空此儲存格",
+                    action: function (e, cell) {
+                        cell.setValue('');
+                        syncToTextarea();
+                    }
+                }
+            ]
+        };
+    }
 
     // --- CSV 解析器 ---
     function parseCsvToRows(csvText) {
@@ -63,27 +281,7 @@
         }
 
         const headers = matrix[0] || [];
-        const columns = headers.map((h, idx) => ({
-            title: String(h || `欄位 ${idx + 1}`),
-            field: `col_${idx}`,
-            headerSort: true,
-            editor: "input",
-            editableTitle: true,
-            resizable: true,
-            headerContextMenu: [
-                {
-                    label: "🗑️ 刪除此欄",
-                    action: function(e, column) {
-                        const def = column.getDefinition();
-                        const title = def.title || '此欄';
-                        if (confirm(`確定要刪除「${title}」欄位嗎？`)) {
-                            column.delete();
-                            syncToTextarea();
-                        }
-                    }
-                }
-            ]
-        }));
+        const columns = headers.map((h, idx) => createColumnDef(h || `欄位 ${idx + 1}`, `col_${idx}`));
 
         const tableData = [];
         for (let r = 1; r < matrix.length; r++) {
@@ -105,10 +303,20 @@
             layout: "fitDataFill",
             maxHeight: "100%",
             placeholder: "無資料",
+            cellClick: function (e, cell) {
+                attachFillHandle(cell);
+            },
+            cellEdited: function (cell) {
+                syncToTextarea();
+                attachFillHandle(cell);
+            },
+            columnTitleChanged: function () {
+                syncToTextarea();
+            },
             rowContextMenu: [
                 {
                     label: "➕ 在下方插入新列",
-                    action: function(e, row) {
+                    action: function (e, row) {
                         const newRow = { id: Date.now() };
                         tabulatorTable.getColumns().forEach(col => {
                             newRow[col.getField()] = '';
@@ -120,20 +328,15 @@
                 },
                 {
                     label: "🗑️ 刪除此列",
-                    action: function(e, row) {
+                    action: function (e, row) {
                         row.delete();
                         syncToTextarea();
                     }
                 }
-            ],
-            cellEdited: function() {
-                syncToTextarea();
-            },
-            columnTitleChanged: function() {
-                syncToTextarea();
-            }
+            ]
         });
 
+        ui.gridContainer.classList.toggle('filter-hidden', !isFilterVisible);
         ui.rawTextarea.value = csvText;
     }
 
@@ -200,27 +403,8 @@
         if (title === null) return;
 
         const newField = `col_${Date.now()}_${colIndex}`;
-        tabulatorTable.addColumn({
-            title: title.trim() || defaultTitle,
-            field: newField,
-            headerSort: true,
-            editor: "input",
-            editableTitle: true,
-            resizable: true,
-            headerContextMenu: [
-                {
-                    label: "🗑️ 刪除此欄",
-                    action: function(e, column) {
-                        const def = column.getDefinition();
-                        const colTitle = def.title || '此欄';
-                        if (confirm(`確定要刪除「${colTitle}」欄位嗎？`)) {
-                            column.delete();
-                            syncToTextarea();
-                        }
-                    }
-                }
-            ]
-        }, false).then(() => {
+        const colDef = createColumnDef(title.trim() || defaultTitle, newField);
+        tabulatorTable.addColumn(colDef, false).then(() => {
             syncToTextarea();
         });
     }
@@ -366,6 +550,20 @@
         }
     }
 
+    // --- 標題篩選切換 ---
+    function toggleHeaderFilter(visible) {
+        if (visible === undefined) visible = !isFilterVisible;
+        isFilterVisible = visible;
+        ui.gridContainer.classList.toggle('filter-hidden', !isFilterVisible);
+        if (ui.btnToggleFilter) {
+            ui.btnToggleFilter.classList.toggle('active', isFilterVisible);
+            ui.btnToggleFilter.title = isFilterVisible ? "隱藏標題篩選列" : "顯示標題篩選列";
+        }
+        if (!isFilterVisible && tabulatorTable) {
+            tabulatorTable.clearHeaderFilter();
+        }
+    }
+
     // --- 事件監聽 ---
     ui.btnNew.addEventListener('click', createNew);
     if (ui.btnLoadTemplate) ui.btnLoadTemplate.addEventListener('click', loadTemplate);
@@ -373,6 +571,7 @@
     ui.btnSave.addEventListener('click', saveFile);
     ui.btnAddRow.addEventListener('click', addRow);
     ui.btnAddCol.addEventListener('click', addCol);
+    if (ui.btnToggleFilter) ui.btnToggleFilter.addEventListener('click', () => toggleHeaderFilter());
     ui.btnToggleRaw.addEventListener('click', toggleRawView);
 
     // 原始碼文字框輸入時自動更新草稿
@@ -403,7 +602,7 @@
         }
     });
 
-    // --- 離開頁面防呆警告 ---
+    // --- 離開頁面防呆警告與外部點擊取消選取 ---
     window.addEventListener('beforeunload', (e) => {
         if (isDirty) {
             e.preventDefault();
@@ -412,6 +611,19 @@
     });
 
     document.addEventListener('click', (e) => {
+        // 若點擊表格外部，取消儲存格選取與移除把手
+        if (!e.target.closest('#grid-container') && !e.target.closest('.tabulator-menu')) {
+            if (activeCell) {
+                try {
+                    activeCell.getElement().classList.remove('active-cell');
+                } catch (err) {}
+                activeCell = null;
+                if (fillHandleEl.parentNode) {
+                    fillHandleEl.parentNode.removeChild(fillHandleEl);
+                }
+            }
+        }
+
         const link = e.target.closest('a[href]');
         if (link && isDirty) {
             const href = link.getAttribute('href');

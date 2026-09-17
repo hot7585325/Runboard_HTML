@@ -84,3 +84,72 @@
     resize: none;
     outline: none;
 }
+
+/* --- Excel 特色樣式：標題篩選 --- */
+.tabulator-header-filter {
+    padding: 2px 4px 6px 4px !important;
+}
+.tabulator-header-filter input {
+    background-color: #181818 !important;
+    color: #e2e8f0 !important;
+    border: 1px solid #4a5568 !important;
+    border-radius: 4px !important;
+    padding: 3px 6px !important;
+    font-size: 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    outline: none !important;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.tabulator-header-filter input:focus {
+    border-color: #107c41 !important;
+    box-shadow: 0 0 0 1px #107c41 !important;
+}
+.tabulator-header-filter input::placeholder {
+    color: #718096 !important;
+}
+#grid-container.filter-hidden .tabulator-header-filter {
+    display: none !important;
+}
+#btn-toggle-filter.active {
+    background-color: #107c41 !important;
+    color: #fff !important;
+    border-color: #107c41 !important;
+}
+
+/* --- Excel 特色樣式：儲存格選取與下拉填滿把手 (Fill Handle) --- */
+.tabulator-cell.active-cell {
+    outline: 2px solid #107c41 !important;
+    outline-offset: -2px;
+    position: relative !important;
+    z-index: 5;
+}
+
+.cell-fill-handle {
+    position: absolute;
+    right: -1px;
+    bottom: -1px;
+    width: 7px;
+    height: 7px;
+    background-color: #107c41;
+    border: 1px solid #ffffff;
+    cursor: crosshair !important;
+    z-index: 20;
+    box-sizing: border-box;
+    box-shadow: 0 0 2px rgba(0,0,0,0.6);
+    user-select: none;
+}
+.cell-fill-handle:hover {
+    background-color: #1dd168;
+    transform: scale(1.2);
+}
+
+.tabulator-cell.fill-target-highlight {
+    background-color: rgba(16, 124, 65, 0.22) !important;
+    border-left: 1px dashed #107c41 !important;
+    border-right: 1px dashed #107c41 !important;
+}
+.tabulator-cell.fill-target-bottom {
+    border-bottom: 2px dashed #107c41 !important;
+}
+
