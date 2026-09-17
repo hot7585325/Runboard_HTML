@@ -18,6 +18,8 @@
         fileName: document.getElementById('file-name-display'),
         btnSave: document.getElementById('btn-save'),
         btnToggleCsvRaw: document.getElementById('btn-toggle-csv-raw'),
+        btnCsvAddRow: document.getElementById('btn-csv-add-row'),
+        btnCsvAddCol: document.getElementById('btn-csv-add-col'),
         btnToggleJsonRaw: document.getElementById('btn-toggle-json-raw'),
         btnOpenSearch: document.getElementById('btn-open-search'),
         btnCloseSearch: document.getElementById('btn-close-search'),
@@ -111,6 +113,8 @@
             ui.gridContainer.style.display = 'block';
             ui.btnToggleCsvRaw.style.display = 'flex';
             ui.btnToggleCsvRaw.innerHTML = '📝 切換原始碼';
+            if (ui.btnCsvAddRow) ui.btnCsvAddRow.style.display = 'flex';
+            if (ui.btnCsvAddCol) ui.btnCsvAddCol.style.display = 'flex';
 
             initCodeMirror(ui.editorContainer, defaultCsv, 'csv', (newVal) => {
                 rawTextLines = newVal.split('\n');
@@ -162,6 +166,8 @@
         ui.jsonTreeContainer.style.display = 'none';
 
         ui.btnToggleCsvRaw.style.display = 'none';
+        if (ui.btnCsvAddRow) ui.btnCsvAddRow.style.display = 'none';
+        if (ui.btnCsvAddCol) ui.btnCsvAddCol.style.display = 'none';
         ui.btnToggleJsonRaw.style.display = 'none';
         ui.searchInput.value = '';
         ui.filterResults.innerHTML = '';
@@ -269,6 +275,8 @@
         ui.btnSave.style.display = 'flex';
         ui.btnToggleCsvRaw.style.display = 'flex';
         ui.btnToggleCsvRaw.innerHTML = '📝 切換原始碼';
+        if (ui.btnCsvAddRow) ui.btnCsvAddRow.style.display = 'flex';
+        if (ui.btnCsvAddCol) ui.btnCsvAddCol.style.display = 'flex';
 
         initCodeMirror(ui.editorContainer, text, 'csv', (newVal) => {
             rawTextLines = newVal.split('\n');
@@ -373,7 +381,21 @@
             field: `col_${idx}`,
             headerSort: true,
             editor: isEditable ? "input" : false,
-            resizable: true
+            editableTitle: isEditable,
+            resizable: true,
+            headerContextMenu: isEditable ? [
+                {
+                    label: "🗑️ 刪除此欄",
+                    action: function(e, column) {
+                        const def = column.getDefinition();
+                        const title = def.title || '此欄';
+                        if (confirm(`確定要刪除「${title}」欄位嗎？`)) {
+                            column.delete();
+                            syncTabulatorToCodeMirror();
+                        }
+                    }
+                }
+            ] : undefined
         }));
 
         const tableData = [];
@@ -392,7 +414,33 @@
             layout: "fitDataFill",
             maxHeight: "100%",
             placeholder: "無資料",
+            rowContextMenu: isEditable ? [
+                {
+                    label: "➕ 在下方插入新列",
+                    action: function(e, row) {
+                        const newRow = { id: Date.now() };
+                        tabulatorTable.getColumns().forEach(col => {
+                            newRow[col.getField()] = '';
+                        });
+                        tabulatorTable.addRow(newRow, false, row).then(() => {
+                            syncTabulatorToCodeMirror();
+                        });
+                    }
+                },
+                {
+                    label: "🗑️ 刪除此列",
+                    action: function(e, row) {
+                        row.delete();
+                        syncTabulatorToCodeMirror();
+                    }
+                }
+            ] : undefined,
             cellEdited: function() {
+                if (currentExt === 'csv') {
+                    syncTabulatorToCodeMirror();
+                }
+            },
+            columnTitleChanged: function(column) {
                 if (currentExt === 'csv') {
                     syncTabulatorToCodeMirror();
                 }
@@ -400,15 +448,77 @@
         });
     }
 
+    function addCsvRow() {
+        if (!tabulatorTable || currentExt !== 'csv') return;
+        const newRow = { id: Date.now() };
+        const cols = tabulatorTable.getColumns();
+        cols.forEach(col => {
+            newRow[col.getField()] = '';
+        });
+        tabulatorTable.addRow(newRow, false).then(row => {
+            if (row && typeof row.scrollTo === 'function') {
+                row.scrollTo();
+            }
+            syncTabulatorToCodeMirror();
+        });
+    }
+
+    function addCsvColumn() {
+        if (!tabulatorTable || currentExt !== 'csv') return;
+        const cols = tabulatorTable.getColumns();
+        const colIndex = cols.length;
+        const defaultTitle = `欄位 ${colIndex + 1}`;
+        const title = prompt('請輸入新欄位名稱：', defaultTitle);
+        if (title === null) return;
+
+        const newField = `col_${Date.now()}_${colIndex}`;
+        tabulatorTable.addColumn({
+            title: title.trim() || defaultTitle,
+            field: newField,
+            headerSort: true,
+            editor: "input",
+            editableTitle: true,
+            resizable: true,
+            headerContextMenu: [
+                {
+                    label: "🗑️ 刪除此欄",
+                    action: function(e, column) {
+                        const def = column.getDefinition();
+                        const colTitle = def.title || '此欄';
+                        if (confirm(`確定要刪除「${colTitle}」欄位嗎？`)) {
+                            column.delete();
+                            syncTabulatorToCodeMirror();
+                        }
+                    }
+                }
+            ]
+        }, false).then(() => {
+            syncTabulatorToCodeMirror();
+        });
+    }
+
     function syncTabulatorToCodeMirror() {
         if (!tabulatorTable || currentExt !== 'csv') return;
-        const columns = tabulatorTable.getColumnDefinitions();
+        const columns = tabulatorTable.getColumns();
         const data = tabulatorTable.getData();
         
-        const headerRow = columns.map(col => `"${String(col.title).replace(/"/g, '""')}"`).join(',');
+        const headerRow = columns.map(col => {
+            const def = col.getDefinition();
+            let title = def.title;
+            try {
+                const titleEl = col.getElement().querySelector('.tabulator-col-title');
+                if (titleEl && titleEl.textContent && titleEl.textContent.trim()) {
+                    title = titleEl.textContent.trim();
+                }
+            } catch (e) {}
+            if (title === undefined || title === null) title = String(col.getField());
+            return `"${String(title).replace(/"/g, '""')}"`;
+        }).join(',');
+
         const dataRows = data.map(row => {
             return columns.map(col => {
-                const val = row[col.field] !== undefined ? String(row[col.field]) : '';
+                const field = col.getField();
+                const val = row[field] !== undefined && row[field] !== null ? String(row[field]) : '';
                 return `"${val.replace(/"/g, '""')}"`;
             }).join(',');
         });
@@ -502,12 +612,16 @@
             ui.gridContainer.style.display = 'block';
             renderCsvToTabulator(editor.getValue(), true);
             ui.btnToggleCsvRaw.innerHTML = '📝 切換原始碼';
+            if (ui.btnCsvAddRow) ui.btnCsvAddRow.style.display = 'flex';
+            if (ui.btnCsvAddCol) ui.btnCsvAddCol.style.display = 'flex';
         } else {
             syncTabulatorToCodeMirror();
             ui.gridContainer.style.display = 'none';
             ui.singleEditorContainer.style.display = 'block';
             editor.refresh();
             ui.btnToggleCsvRaw.innerHTML = '📊 切換表格視圖';
+            if (ui.btnCsvAddRow) ui.btnCsvAddRow.style.display = 'none';
+            if (ui.btnCsvAddCol) ui.btnCsvAddCol.style.display = 'none';
         }
     }
 
@@ -692,6 +806,8 @@
     document.getElementById('btn-open').addEventListener('click', selectFile);
     ui.btnSave.addEventListener('click', saveFile);
     ui.btnToggleCsvRaw.addEventListener('click', toggleCsvRawView);
+    if (ui.btnCsvAddRow) ui.btnCsvAddRow.addEventListener('click', addCsvRow);
+    if (ui.btnCsvAddCol) ui.btnCsvAddCol.addEventListener('click', addCsvColumn);
     ui.btnToggleJsonRaw.addEventListener('click', toggleJsonRawView);
 
     ui.searchInput.addEventListener('input', (e) => {

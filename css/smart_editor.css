@@ -254,6 +254,34 @@
 .tabulator-row:hover { background-color: #37373d !important; }
 .tabulator-cell { border-right: 1px solid #2d2d2d !important; padding: 8px 10px !important; }
 
+/* Tabulator Context Menu & Header Edit */
+.tabulator-menu {
+    background-color: #2d2d2d !important;
+    border: 1px solid #444 !important;
+    border-radius: 4px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+    padding: 4px 0 !important;
+}
+.tabulator-menu .tabulator-menu-item {
+    color: #e2e8f0 !important;
+    padding: 8px 16px !important;
+    font-size: 13px !important;
+    cursor: pointer !important;
+}
+.tabulator-menu .tabulator-menu-item:hover {
+    background-color: #007acc !important;
+    color: #fff !important;
+}
+.tabulator-col-title input {
+    background-color: #1e1e1e !important;
+    color: #fff !important;
+    border: 1px solid #007acc !important;
+    border-radius: 2px !important;
+    padding: 2px 4px !important;
+    font-size: 13px !important;
+    outline: none !important;
+}
+
 /* JSONEditor Styling */
 #json-tree-container {
     background-color: #1e1e1e;
