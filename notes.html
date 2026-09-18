@@ -12,7 +12,7 @@
 </head>
 <body>
     <div id="sidebar"></div>
-    <div class="main-content">
+    <div class="main-content notes-page">
         <!-- 未連線提示 -->
         <div id="no-data-msg" style="text-align: center; padding-top: 100px;">
             <h2 style="color: var(--text-secondary); margin-bottom: 15px;">請先點擊左下角「選擇 data.json」按鈕</h2>
@@ -20,20 +20,71 @@
         </div>
 
         <!-- 內容呈現區 -->
-        <div id="app-container" style="display: none; max-width: 1100px;">
-            <div class="section-header">
-                <h2 class="section-title">📝 便條紙</h2>
-                <button class="btn btn-small" onclick="NotesApp.openAddCategory()">＋新增分類</button>
-            </div>
-            <div class="toolbar-container">
-                <div class="search-bar">
+        <div id="app-container" class="notes-app-container" style="display: none;">
+            <!-- 頂部多功能導航與工具列 -->
+            <div class="notes-top-bar">
+                <div class="notes-top-left">
+                    <h2 class="section-title notes-title">📝 便條紙</h2>
+                    <!-- 檢視切換模式膠囊 -->
+                    <div class="view-mode-toggle">
+                        <button type="button" class="btn-mode active" id="btn-mode-canvas" onclick="NotesApp.switchView('canvas')" title="切換至無限畫布模式">
+                            <span>🔲</span> <span>畫布</span>
+                        </button>
+                        <button type="button" class="btn-mode" id="btn-mode-list" onclick="NotesApp.switchView('list')" title="切換至清單網格模式">
+                            <span>📋</span> <span>清單</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 搜尋列 -->
+                <div class="search-bar notes-search-bar">
                     <span class="search-icon">🔍</span>
-                    <input type="text" id="note-search" class="search-input" placeholder="搜尋便條紙內容..." oninput="NotesApp.handleSearch(this.value)">
+                    <input type="text" id="note-search" class="search-input" placeholder="搜尋便條紙內容或群組..." oninput="NotesApp.handleSearch(this.value)">
+                </div>
+
+                <!-- 群組切換膠囊 (群組導航) -->
+                <div class="group-pills-bar" id="group-pills"></div>
+
+                <!-- 右側動作區 -->
+                <div class="notes-top-actions">
+                    <div id="canvas-controls" class="canvas-controls-group">
+                        <button type="button" class="btn-tool" id="btn-reset-view" onclick="NotesApp.resetView()" title="重設視角至 100%">
+                            <span>🔍</span> <span id="lbl-zoom">100%</span>
+                        </button>
+                        <button type="button" class="btn-tool" id="btn-auto-layout" onclick="NotesApp.autoLayout()" title="依群組分區自動排列整齊">
+                            <span>📐</span> <span>自動排版</span>
+                        </button>
+                    </div>
+                    <button class="btn btn-small primary btn-add-cat" onclick="NotesApp.openAddCategory()" title="新增便條紙分類群組">
+                        <span>＋</span> <span>新增分類</span>
+                    </button>
                 </div>
             </div>
-            <div id="notes-list"></div>
+
+            <!-- 無限畫布檢視區 -->
+            <div id="notes-canvas-view" class="canvas-view-wrapper">
+                <div class="canvas-viewport" id="canvas-viewport">
+                    <div class="canvas-transform-layer" id="canvas-transform-layer">
+                        <div class="canvas-groups-layer" id="canvas-groups-layer"></div>
+                    </div>
+                </div>
+                <!-- 畫布右下角操作提示 -->
+                <div class="canvas-hints">
+                    <span>滾輪縮放 (0.2x~2.0x)</span> · 
+                    <span>中鍵/右鍵/空白鍵平移</span> · 
+                    <span>雙擊卡片編輯</span>
+                </div>
+            </div>
+
+            <!-- 傳統清單檢視區 -->
+            <div id="notes-list-view" class="list-view-wrapper" style="display: none;">
+                <div id="notes-list" class="notes-list-container"></div>
+            </div>
         </div>
     </div>
+
+    <!-- 輕量 Toast 提示 -->
+    <div id="notes-toast" class="notes-toast"></div>
     <script src="js/notes.js"></script>
 </body>
 </html>
