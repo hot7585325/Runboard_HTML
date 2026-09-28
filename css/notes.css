@@ -1,4 +1,471 @@
-﻿/* ================= 便條紙區 (Notes) ================= */
+/* ================= 📝 便條紙專屬樣式 (Notes Dual-View & Canvas) ================= */
+
+/* 主畫面佈局覆寫 */
+.main-content.notes-page {
+    padding: 0 !important;
+    overflow: hidden !important;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.notes-app-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* ================= 頂部多功能導航與工具列 ================= */
+.notes-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 18px;
+    background-color: var(--sidebar-bg);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 50;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.notes-top-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.notes-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: white;
+    margin: 0;
+    white-space: nowrap;
+}
+
+/* 檢視模式切換 (Canvas / List) */
+.view-mode-toggle {
+    display: inline-flex;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 2px;
+}
+
+.btn-mode {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: 16px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.btn-mode:hover {
+    color: var(--text-primary);
+}
+
+.btn-mode.active {
+    background-color: var(--accent-color);
+    color: #ffffff;
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* 搜尋列 */
+.notes-search-bar {
+    flex: 1;
+    min-width: 180px;
+    max-width: 280px;
+    margin-bottom: 0;
+}
+
+/* 群組快速切換膠囊列 */
+.group-pills-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    max-width: 480px;
+    padding: 2px 0;
+    scrollbar-width: none;
+}
+
+.group-pills-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.group-pill {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.group-pill:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+    border-color: #555555;
+}
+
+.group-pill.active {
+    background: rgba(59, 130, 246, 0.18);
+    color: #60a5fa;
+    border-color: var(--accent-color);
+    font-weight: 500;
+}
+
+.group-pill .pill-count {
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 10px;
+    padding: 1px 6px;
+    font-size: 11px;
+    color: inherit;
+    opacity: 0.85;
+}
+
+/* 右側動作按鈕 */
+.notes-top-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.canvas-controls-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-tool {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+    user-select: none;
+    height: 32px;
+}
+
+.btn-tool:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+    border-color: #4a4a4a;
+}
+
+.btn-add-cat {
+    margin: 0;
+    height: 32px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+/* ================= 無限畫布檢視 (Canvas View) ================= */
+.canvas-view-wrapper {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    height: 100%;
+    overflow: hidden;
+}
+
+.canvas-viewport {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background-color: #141416;
+    background-image: radial-gradient(circle, #27272c 1.2px, transparent 1.2px);
+    background-size: 24px 24px;
+    cursor: default;
+    user-select: none;
+}
+
+.canvas-viewport.is-panning {
+    cursor: grabbing !important;
+}
+
+.canvas-transform-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+    pointer-events: none;
+}
+
+.canvas-groups-layer {
+    position: relative;
+}
+
+/* 群組分區框 (Group Frame) */
+.canvas-group-frame {
+    position: absolute;
+    background: rgba(26, 26, 30, 0.88);
+    backdrop-filter: blur(12px);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+    display: flex;
+    flex-direction: column;
+    pointer-events: auto;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.canvas-group-frame:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.canvas-group-frame.is-dragging {
+    opacity: 0.92;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+/* 群組聚焦動畫 (Glow Pulse) */
+@keyframes groupFocusPulse {
+    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); border-color: #3b82f6; }
+    50% { box-shadow: 0 0 0 12px rgba(59, 130, 246, 0); border-color: #60a5fa; }
+    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); border-color: rgba(255, 255, 255, 0.1); }
+}
+
+.canvas-group-frame.is-focused-pulse {
+    animation: groupFocusPulse 1.2s ease-out;
+}
+
+/* 群組頂部列 */
+.canvas-group-header {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: grab;
+    user-select: none;
+    border-radius: 12px 12px 0 0;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.canvas-group-header:active {
+    cursor: grabbing;
+}
+
+.canvas-group-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #e4e4e7;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.canvas-group-title .group-badge {
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-secondary);
+    font-weight: normal;
+}
+
+.canvas-group-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.canvas-group-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text-secondary);
+    padding: 3px 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1;
+}
+
+.canvas-group-btn:hover {
+    background: var(--hover-bg);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.canvas-group-btn.btn-collapse {
+    font-weight: bold;
+    font-size: 13px;
+    padding: 3px 8px;
+}
+
+/* 群組內容區 */
+.canvas-group-body {
+    position: relative;
+    padding: 16px;
+    flex: 1;
+}
+
+/* 群組折疊狀態 (Compact Stacking Badge) */
+.canvas-group-frame.is-collapsed {
+    border-style: dashed;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.canvas-group-frame.is-collapsed .canvas-group-header {
+    border-bottom: none;
+    border-radius: 12px;
+    background: transparent;
+}
+
+.canvas-group-frame.is-collapsed .canvas-group-body {
+    display: none;
+}
+
+/* ================= 畫布上的便條節點 (Canvas Note Node) ================= */
+.canvas-note-card {
+    position: absolute;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    cursor: grab;
+    transition: transform 0.15s, box-shadow 0.15s;
+    user-select: text;
+    pointer-events: auto;
+}
+
+.canvas-note-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+    transform: translateY(-2px);
+}
+
+.canvas-note-card.is-dragging {
+    cursor: grabbing;
+    opacity: 0.9;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45);
+    z-index: 100;
+}
+
+.canvas-note-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    padding: 6px 8px 2px;
+    cursor: grab;
+    user-select: none;
+}
+
+.canvas-note-card:active .canvas-note-header {
+    cursor: grabbing;
+}
+
+.canvas-note-btn {
+    background: transparent;
+    border: none;
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0.45;
+    padding: 2px 5px;
+    border-radius: 4px;
+    transition: opacity 0.2s, background 0.2s;
+    line-height: 1;
+    color: rgba(0, 0, 0, 0.7);
+}
+
+.canvas-note-btn:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.canvas-note-body {
+    padding: 6px 12px 12px;
+    flex: 1;
+    overflow: auto;
+}
+
+.canvas-note-content {
+    font-size: 14px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: rgba(0, 0, 0, 0.88);
+}
+
+/* 深色卡片文字智慧反色 */
+.canvas-note-card.dark-theme .canvas-note-content {
+    color: #ffffff;
+}
+
+.canvas-note-card.dark-theme .canvas-note-btn {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.canvas-note-card.dark-theme .canvas-note-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.canvas-note-card.dark-theme .note-link {
+    color: #93c5fd;
+}
+
+/* 畫布操作提示 */
+.canvas-hints {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    background: rgba(20, 20, 24, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    pointer-events: none;
+    z-index: 10;
+    user-select: none;
+}
+
+/* ================= 傳統清單檢視 (List View) ================= */
+.list-view-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    padding: 30px 40px 60px;
+    width: 100%;
+}
+
+.notes-list-container {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+/* 清單模式卡片樣式維持與擴充 */
 .note-card {
     border: 1px solid rgba(0, 0, 0, 0.1);
     line-height: 1.6;
@@ -45,7 +512,8 @@
     color: #2563eb;
 }
 
-.note-card .note-link {
+.note-card .note-link,
+.canvas-note-card .note-link {
     color: #1d4ed8;
     text-decoration: underline;
     word-break: break-all;
@@ -53,26 +521,24 @@
     font-weight: 500;
 }
 
-.note-card .note-link:hover {
+.note-card .note-link:hover,
+.canvas-note-card .note-link:hover {
     color: #1e40af;
     text-decoration: underline;
 }
 
-.note-card::-webkit-scrollbar {
+.note-card::-webkit-scrollbar,
+.canvas-note-body::-webkit-scrollbar {
     width: 6px;
     height: 6px;
 }
 
-.note-card::-webkit-scrollbar-corner {
-    background: transparent;
-}
-
-.note-card::-webkit-scrollbar-thumb {
+.note-card::-webkit-scrollbar-thumb,
+.canvas-note-body::-webkit-scrollbar-thumb {
     background-color: rgba(0, 0, 0, 0.2);
     border-radius: 4px;
 }
 
-/* 深色便簽文字與控制項自動反色 */
 .note-card.dark-theme .item-title {
     color: rgba(255, 255, 255, 0.9);
 }
@@ -86,7 +552,7 @@
     color: #93c5fd;
 }
 
-/* 便條紙行內就地編輯 (Inline Editor) */
+/* 行內就地編輯器 (Inline Editor) */
 .inline-note-editor {
     width: 100%;
     min-height: 100px;
@@ -96,8 +562,8 @@
     border-radius: 6px;
     padding: 8px;
     font-family: inherit;
-    font-size: 15px;
-    line-height: 1.6;
+    font-size: 14px;
+    line-height: 1.55;
     outline: none;
     resize: vertical;
     box-sizing: border-box;
@@ -105,7 +571,7 @@
     transition: background 0.2s, border-color 0.2s;
 }
 
-.note-card.dark-theme .inline-note-editor {
+.dark-theme .inline-note-editor {
     background: rgba(0, 0, 0, 0.35);
     color: #ffffff;
     border-color: rgba(255, 255, 255, 0.3);
@@ -117,7 +583,7 @@
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
 }
 
-.note-card.dark-theme .inline-note-editor:focus {
+.dark-theme .inline-note-editor:focus {
     background: rgba(0, 0, 0, 0.5);
     border-color: rgba(255, 255, 255, 0.6);
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
@@ -130,6 +596,30 @@
     user-select: none;
 }
 
-.note-card.dark-theme .inline-editor-tips {
+.dark-theme .inline-editor-tips {
     color: rgba(255, 255, 255, 0.55);
+}
+
+/* ================= 輕量 Toast 提示 ================= */
+.notes-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(24, 24, 27, 0.95);
+    color: #ffffff;
+    border: 1px solid var(--accent-color);
+    border-radius: 20px;
+    padding: 8px 18px;
+    font-size: 13px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s ease;
+    z-index: 9999;
+}
+
+.notes-toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
 }
