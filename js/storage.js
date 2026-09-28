@@ -14,7 +14,8 @@ const Storage = (function () {
         favorites: [],
         notes: [],
         tasks: [],
-        passwords: []
+        passwords: [],
+        radios: []
     };
     let isConnected = false;
     let onDataLoadedCallback = null;
@@ -87,6 +88,7 @@ const Storage = (function () {
         data.notes = parsed.notes || [];
         data.tasks = parsed.tasks || [];
         data.passwords = parsed.passwords || [];
+        data.radios = parsed.radios || [];
         data.folderGraphSnapshot = parsed.folderGraphSnapshot || null;
         isConnected = true;
         fileHandle = handle;

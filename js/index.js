@@ -65,6 +65,11 @@ const DashboardApp = (function () {
         const statPwdEl = document.getElementById('stat-passwords');
         if (statPwdEl) statPwdEl.innerText = `共儲存 ${pwdCount} 組帳號密碼`;
 
+        // 即時電台統計
+        let radioCount = data.radios ? data.radios.length : 0;
+        const statRadioEl = document.getElementById('stat-radios');
+        if (statRadioEl) statRadioEl.innerText = `${radioCount} 個收藏電台 · 支援線上探索與即時播放`;
+
         // 目錄節點圖統計
         const statGraphEl = document.getElementById('stat-foldergraph');
         if (statGraphEl) {

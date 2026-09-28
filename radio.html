@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RunBoard - 即時電台</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/radio.css">
+    <script src="js/storage.js"></script>
+    <script src="js/nav.js"></script>
+    <script src="js/modal.js"></script>
+</head>
+<body>
+    <div id="sidebar"></div>
+    <div class="main-content">
+        <!-- 未連線提示 -->
+        <div id="no-data-msg" style="text-align: center; padding-top: 100px;">
+            <h2 style="color: var(--text-secondary); margin-bottom: 15px;">請先點擊左下角「選擇 data.json」按鈕</h2>
+            <p style="color: #666;">授權後即可在此管理與聆聽您的專屬電台，並自動儲存至本機檔案。</p>
+        </div>
+
+        <!-- 主內容區 -->
+        <div id="app-container" style="display: none; max-width: 1100px;">
+            <!-- 標題欄 -->
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">📻 即時電台 (Live Radio)</h2>
+                    <p class="section-subtitle">即時聆聽台灣各地與全球廣播串流 · 支援自訂電台與線上開源電台庫探索</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-small primary" onclick="RadioApp.openAddModal()">＋ 新增自訂電台</button>
+                </div>
+            </div>
+
+            <!-- 核心播放器控制卡片 (Now Playing Deck) -->
+            <div class="radio-deck-card" id="radio-deck">
+                <div class="deck-visual-area">
+                    <div class="deck-icon" id="deck-icon">📻</div>
+                    <div class="deck-equalizer" id="deck-equalizer">
+                        <span class="bar bar-1"></span>
+                        <span class="bar bar-2"></span>
+                        <span class="bar bar-3"></span>
+                        <span class="bar bar-4"></span>
+                        <span class="bar bar-5"></span>
+                    </div>
+                </div>
+                
+                <div class="deck-info-area">
+                    <div class="deck-status-tag" id="deck-status-tag">
+                        <span class="status-dot idle" id="deck-status-dot"></span>
+                        <span id="deck-status-text">待機中 (請選取電台播放)</span>
+                    </div>
+                    <div class="deck-station-title" id="deck-station-title">尚未選取電台</div>
+                    <div class="deck-station-meta" id="deck-station-meta">點選下方收藏或探索電台開始串流播放</div>
+                </div>
+
+                <div class="deck-controls-area">
+                    <div class="deck-btn-group">
+                        <button class="deck-play-btn" id="deck-play-btn" title="播放 / 暫停" onclick="RadioApp.togglePlay()">
+                            ▶️
+                        </button>
+                        <button class="deck-stop-btn" id="deck-stop-btn" title="停止" onclick="RadioApp.stop()">
+                            ⏹️
+                        </button>
+                    </div>
+
+                    <div class="deck-volume-box">
+                        <button class="deck-mute-btn" id="deck-mute-btn" title="靜音切換" onclick="RadioApp.toggleMute()">
+                            🔊
+                        </button>
+                        <input type="range" id="deck-volume-slider" class="deck-volume-slider" min="0" max="1" step="0.05" value="0.8" oninput="RadioApp.setVolume(this.value)">
+                        <span class="deck-volume-label" id="deck-volume-label">80%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分頁切換 (Tabs) -->
+            <div class="radio-tabs-bar">
+                <button class="radio-tab active" id="tab-btn-my" onclick="RadioApp.switchTab('my')">
+                    ⭐ 我的收藏電台 (<span id="badge-my-count">0</span>)
+                </button>
+                <button class="radio-tab" id="tab-btn-explore" onclick="RadioApp.switchTab('explore')">
+                    🌐 線上探索電台 (Radio-Browser)
+                </button>
+            </div>
+
+            <!-- 分頁 1: 我的收藏電台 -->
+            <div id="tab-content-my" class="tab-pane active">
+                <div class="toolbar-container radio-toolbar">
+                    <div class="search-bar">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="my-search-input" class="search-input" placeholder="搜尋我的電台 (名稱、分類、地區、標籤)..." oninput="RadioApp.handleMySearch(this.value)">
+                    </div>
+                    <div class="filter-chips" id="my-category-chips">
+                        <!-- 動態分類按鈕 -->
+                    </div>
+                </div>
+
+                <div class="stations-grid" id="my-stations-grid">
+                    <!-- 電台卡片清單動態渲染 -->
+                </div>
+            </div>
+
+            <!-- 分頁 2: 線上探索庫 -->
+            <div id="tab-content-explore" class="tab-pane" style="display: none;">
+                <div class="explore-search-panel">
+                    <div class="explore-quick-tags">
+                        <span class="quick-label">熱門關鍵字：</span>
+                        <button class="chip-btn" onclick="RadioApp.exploreByTag('Taiwan')">🇹🇼 台灣全區</button>
+                        <button class="chip-btn" onclick="RadioApp.exploreByTag('Taichung')">🏙️ 台中 (Taichung)</button>
+                        <button class="chip-btn" onclick="RadioApp.exploreByTag('Pop')">🎶 流行 Pop</button>
+                        <button class="chip-btn" onclick="RadioApp.exploreByTag('Jazz')">☕ 爵士放鬆 Jazz</button>
+                        <button class="chip-btn" onclick="RadioApp.exploreByTag('Chill')">🎧 Lofi / Chill</button>
+                        <button class="chip-btn" onclick="RadioApp.exploreByTag('Classical')">🎻 古典音樂</button>
+                        <button class="chip-btn" onclick="RadioApp.exploreByTag('News')">📰 即時新聞</button>
+                    </div>
+
+                    <div class="explore-dropdown-row">
+                        <label for="popular-station-select" class="dropdown-label">👇 快速挑選熱門推薦電台：</label>
+                        <select id="popular-station-select" class="search-input explore-select" onchange="RadioApp.handlePresetSelect(this.value)">
+                            <option value="">-- 請選擇想收聽或收錄的電台 --</option>
+                            <optgroup label="🇹🇼 台中在地廣播">
+                                <option value="全國廣播">全国廣播 (M Radio 台中 FM 106.1)</option>
+                                <option value="Classical 古典音樂台">Classical 古典音樂台 FM 97.7 (台中)</option>
+                                <option value="大樹下電台">FM 90.5 大樹下電台 (台中)</option>
+                            </optgroup>
+                            <optgroup label="📻 台灣主要聯播網與新聞">
+                                <option value="中廣流行網">中廣流行網 (i like radio)</option>
+                                <option value="中廣新聞網">中廣新聞網 (News)</option>
+                                <option value="九八新聞台">九八新聞台 (News98)</option>
+                                <option value="ICRT">ICRT (台北國際社區廣播電台)</option>
+                                <option value="Hit FM">Hit FM 台北之音</option>
+                                <option value="IC之音">IC之音竹科廣播</option>
+                                <option value="RTI 臺灣之音">RTI 臺灣之音 (中央廣播電台)</option>
+                                <option value="NER教育電臺">NER 國家教育廣播電台</option>
+                                <option value="佳音電台">佳音廣播電台 (FM 90.9)</option>
+                            </optgroup>
+                            <optgroup label="🎶 音樂與專題電台">
+                                <option value="AsiaFM 亞洲電台">AsiaFM 亞洲電台 (流行音樂)</option>
+                                <option value="AsiaFM 亞太電台">AsiaFM 亞太電台 (生活娛樂)</option>
+                                <option value="1766線上電臺-私房音樂">1766線上電台 - 私房音樂</option>
+                                <option value="1766線上電臺-百家知識">1766線上電台 - 百家知識</option>
+                                <option value="A-Line Radio">A-Line Radio 聯播網</option>
+                                <option value="Nei-Di">Nei-Di's ACG Music (日本動漫遊戲音樂)</option>
+                            </optgroup>
+                            <optgroup label="🌍 國際放鬆與專注 (Lofi / Jazz / News)">
+                                <option value="Lofi">Lofi Focus & Chill (寫程式/讀書電台)</option>
+                                <option value="Jazz">Jazz Cafe Radio (爵士古典放鬆)</option>
+                                <option value="BBC World Service">BBC World Service (國際新聞與英語)</option>
+                                <option value="Classical">Global Classical (全球古典樂曲)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <div class="explore-input-row">
+                        <div class="search-bar explore-search-bar">
+                            <span class="search-icon">🌐</span>
+                            <input type="text" id="explore-query-input" class="search-input" list="station-datalist" placeholder="或手動輸入電台名稱、標籤或關鍵字 (點擊可看推薦)..." onkeydown="if(event.key==='Enter') RadioApp.searchOnline()">
+                            <datalist id="station-datalist">
+                                <option value="全國廣播 M Radio">
+                                <option value="Classical 古典音樂台 FM 97.7">
+                                <option value="中廣流行網">
+                                <option value="中廣新聞網">
+                                <option value="九八新聞台">
+                                <option value="ICRT">
+                                <option value="Hit FM">
+                                <option value="AsiaFM 亞洲電台">
+                                <option value="1766線上電臺">
+                                <option value="Taiwan">
+                                <option value="Taichung">
+                                <option value="Jazz">
+                                <option value="Lofi">
+                                <option value="BBC World Service">
+                            </datalist>
+                        </div>
+                        <button class="btn primary" onclick="RadioApp.searchOnline()">🔍 線上搜尋</button>
+                    </div>
+                </div>
+
+                <div id="explore-status-box" class="explore-status-msg" style="display: none;"></div>
+                <div class="stations-grid" id="explore-stations-grid">
+                    <!-- 線上搜尋結果動態渲染 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 專屬模組 JS -->
+    <script src="js/radio.js"></script>
+</body>
+</html>
