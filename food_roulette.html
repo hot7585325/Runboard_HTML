@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RunBoard - 美食大轉盤</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/food_roulette.css">
+    <script src="js/storage.js"></script>
+    <script src="js/nav.js"></script>
+    <script src="js/modal.js"></script>
+</head>
+<body>
+    <div id="sidebar"></div>
+    <div class="main-content">
+        <!-- 未連線提示 -->
+        <div id="no-data-msg" style="text-align: center; padding-top: 100px;">
+            <h2 style="color: var(--text-secondary); margin-bottom: 15px;">請先點擊左下角「選擇 data.json」按鈕</h2>
+            <p style="color: #666;">授權後即可使用美食大轉盤，並將心愛店家儲存至口袋名單。</p>
+        </div>
+
+        <!-- 內容呈現區 -->
+        <div id="app-container" style="display: none; max-width: 1100px;">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">🎡 美食大轉盤</h2>
+                    <p class="section-subtitle">探索周邊美食、設定範圍數量，按下轉盤幫你決定今天吃什麼！</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-small" id="btn-add-custom-place" onclick="FoodRouletteApp.openAddCustomModal()">＋新增口袋店家</button>
+                </div>
+            </div>
+
+            <!-- 模式切換 Tabs -->
+            <div class="mode-tabs">
+                <button class="tab-btn active" id="tab-nearby" onclick="FoodRouletteApp.switchMode('nearby')">🧭 附近即時探索 (OpenStreetMap)</button>
+                <button class="tab-btn" id="tab-favorites" onclick="FoodRouletteApp.switchMode('favorites')">⭐ 我的口袋名單 (<span id="fav-count-badge">0</span>)</button>
+            </div>
+
+            <!-- 控制面板 (附近探索專用) -->
+            <div id="panel-nearby-controls" class="control-panel">
+                <div class="control-row location-row">
+                    <div class="location-group">
+                        <button class="btn primary btn-small" id="btn-get-location" onclick="FoodRouletteApp.getCurrentLocation()">
+                            📍 取得目前位置
+                        </button>
+                        <span class="location-or">或</span>
+                        <div class="search-place-input-wrap">
+                            <input type="text" id="input-search-place" class="search-input" placeholder="輸入地標或地址 (例：台北車站、西門町)..." onkeydown="if(event.key==='Enter') FoodRouletteApp.searchAddressGeocode()">
+                            <button class="btn btn-small" onclick="FoodRouletteApp.searchAddressGeocode()">查詢地點</button>
+                        </div>
+                    </div>
+                    <div id="location-status-badge" class="status-badge">
+                        尚未定位（點擊上方按鈕定位）
+                    </div>
+                </div>
+
+                <div class="control-row filters-row">
+                    <!-- 範圍設定 -->
+                    <div class="slider-control">
+                        <label for="range-radius">
+                            <span>搜尋範圍半徑：</span>
+                            <span id="radius-val" class="highlight-val">800 公尺</span>
+                        </label>
+                        <input type="range" id="range-radius" min="300" max="3000" step="100" value="800" oninput="FoodRouletteApp.updateRadiusDisplay(this.value)">
+                    </div>
+
+                    <!-- 數量設定 -->
+                    <div class="slider-control">
+                        <label for="range-count">
+                            <span>轉盤候選數量：</span>
+                            <span id="count-val" class="highlight-val">12 間</span>
+                        </label>
+                        <input type="range" id="range-count" min="4" max="24" step="1" value="12" oninput="FoodRouletteApp.updateCountDisplay(this.value)">
+                    </div>
+
+                    <!-- 類別過濾 -->
+                    <div class="category-filter">
+                        <label>店家類型：</label>
+                        <select id="select-category" class="filter-select" onchange="FoodRouletteApp.onFilterChange()">
+                            <option value="all">🍽️ 全部美食類型</option>
+                            <option value="restaurant">🍜 餐廳正餐</option>
+                            <option value="fast_food">🍔 炸物 / 速食 / 小吃</option>
+                            <option value="cafe">☕ 咖啡廳 / 飲料甜點</option>
+                        </select>
+                    </div>
+
+                    <!-- 搜尋按鈕 -->
+                    <div class="search-action">
+                        <button class="btn primary" id="btn-search-nearby" onclick="FoodRouletteApp.fetchNearbyPlaces()">
+                            🔍 搜尋並更新轉盤
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 口袋名單專用提示面板 -->
+            <div id="panel-favorites-controls" class="control-panel" style="display: none;">
+                <div class="fav-panel-header">
+                    <div>
+                        <span style="font-weight: bold; color: var(--text-primary);">⭐ 口袋名單模式</span>
+                        <span style="color: var(--text-secondary); font-size: 13px; margin-left: 8px;">在此模式下將直接使用您收藏的店家進行轉盤抽籤（支援離線）</span>
+                    </div>
+                    <button class="btn btn-small" onclick="FoodRouletteApp.openAddCustomModal()">＋新增自訂店家</button>
+                </div>
+            </div>
+
+            <!-- 主轉盤與抽籤結果區 -->
+            <div class="roulette-main-layout">
+                <!-- 左側：大圓形轉盤 -->
+                <div class="wheel-section">
+                    <div class="wheel-container">
+                        <!-- 轉盤指針 -->
+                        <div class="wheel-pointer" id="wheel-pointer">▼</div>
+                        <!-- Canvas 轉盤 -->
+                        <canvas id="roulette-canvas" width="460" height="460"></canvas>
+                        <!-- 中心旋轉觸發按鈕 -->
+                        <button id="wheel-spin-btn" class="wheel-center-btn" onclick="FoodRouletteApp.spin()">
+                            <span>SPIN!</span>
+                            <small>開始抽籤</small>
+                        </button>
+                    </div>
+                    <!-- 快捷操作列 -->
+                    <div class="wheel-quick-actions">
+                        <button class="btn btn-small" onclick="FoodRouletteApp.shuffleCandidates()">🔀 重新打亂</button>
+                        <button class="btn btn-small" id="btn-toggle-sound" onclick="FoodRouletteApp.toggleSound()">🔊 音效：開</button>
+                        <button class="btn btn-small" onclick="FoodRouletteApp.selectAllCandidates(true)">全選</button>
+                        <button class="btn btn-small" onclick="FoodRouletteApp.selectAllCandidates(false)">全不選</button>
+                    </div>
+                </div>
+
+                <!-- 右側：結果展示卡片 & 資訊 -->
+                <div class="result-section">
+                    <!-- 載入中狀態 -->
+                    <div id="places-loading" class="state-loading" style="display: none;">
+                        <div class="spinner"></div>
+                        <p id="loading-text">正在透過 OpenStreetMap 搜尋附近店家...</p>
+                    </div>
+
+                    <!-- 抽中結果卡片 -->
+                    <div id="result-card" class="result-card" style="display: none;">
+                        <div class="result-badge">🎉 幸運中選！</div>
+                        <h3 id="result-name" class="result-title">店家名稱</h3>
+                        <div class="result-meta">
+                            <span id="result-distance" class="meta-tag distance-tag">🚶 約 350m</span>
+                            <span id="result-type" class="meta-tag type-tag">🍽️ 餐廳</span>
+                        </div>
+                        <div id="result-address" class="result-address">地址載入中...</div>
+                        
+                        <div class="result-actions">
+                            <a id="result-gmap-link" href="#" target="_blank" class="btn primary" rel="noopener noreferrer">
+                                🗺️ 在 Google Maps 開啟 / 導航
+                            </a>
+                            <button id="result-fav-btn" class="btn btn-small" onclick="FoodRouletteApp.toggleFavoriteFromCurrentResult()">
+                                ⭐ 收藏到口袋名單
+                            </button>
+                            <button class="btn btn-small" onclick="FoodRouletteApp.spin()">
+                                🔄 再抽一次
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 尚未抽籤初始導引卡片 -->
+                    <div id="result-placeholder" class="result-placeholder">
+                        <div class="placeholder-icon">🎰</div>
+                        <div class="placeholder-title">按下輪盤中間的「SPIN!」開始</div>
+                        <p class="placeholder-desc">目前轉盤上有 <span id="candidate-count-display">0</span> 家美食候選。系統將透過真實物理減速隨機挑選一家！</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 下方：轉盤候選店家清單 (可勾選剔除或手動加入) -->
+            <div class="candidates-section">
+                <div class="section-header" style="margin-bottom: 12px;">
+                    <div>
+                        <h3 style="font-size: 16px; color: var(--text-primary);">📋 目前轉盤候選名單 (<span id="active-candidate-count">0</span> / <span id="total-candidate-count">0</span>)</h3>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">您可以取消勾選今天不想吃的店家，轉盤將即時排除！</p>
+                    </div>
+                </div>
+                <div id="candidates-grid" class="candidates-grid">
+                    <!-- 動態渲染卡片清單 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 粒子特效 Canvas (在中選時噴發彩帶) -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <script src="js/food_roulette.js"></script>
+</body>
+</html>

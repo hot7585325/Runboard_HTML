@@ -70,6 +70,11 @@ const DashboardApp = (function () {
         const statRadioEl = document.getElementById('stat-radios');
         if (statRadioEl) statRadioEl.innerText = `${radioCount} 個收藏電台 · 支援線上探索與即時播放`;
 
+        // 美食大轉盤統計
+        let foodCount = data.foodPlaces ? data.foodPlaces.length : 0;
+        const statFoodEl = document.getElementById('stat-foodplaces');
+        if (statFoodEl) statFoodEl.innerText = `${foodCount} 間口袋名單 · 支援附近探索與轉盤抽籤`;
+
         // 目錄節點圖統計
         const statGraphEl = document.getElementById('stat-foldergraph');
         if (statGraphEl) {
